@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritual — Habit Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141417;
+    --surface2: #1c1c21;
+    --border: #2a2a32;
+    --accent: #c8a96e;
+    --accent2: #e8c88e;
+    --text: #e8e4dc;
+    --muted: #7a7870;
+    --danger: #e07060;
+    --success: #6daf80;
+    --reward: #b87fbf;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-area h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .logo-area .tagline {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  .date-display {
+    text-align: right;
+  }
+
+  .date-display .day {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--text);
+  }
+
+  .date-display .full-date {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Reward Bar */
+  .reward-bar {
+    background: linear-gradient(135deg, #1e1825 0%, #1a1520 100%);
+    border: 1px solid #3a2a45;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .reward-bar:hover {
+    border-color: var(--reward);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(184, 127, 191, 0.15);
+  }
+
+  .reward-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .reward-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #b87fbf, #8a50a0);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
+  .reward-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .reward-amount {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--reward);
+    font-weight: 700;
+  }
+
+  .reward-cta {
+    font-size: 0.65rem;
+    color: var(--reward);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  /* Daily Progress */
+  .progress-section {
+    margin-bottom: 32px;
+  }
+
+  .section-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .progress-bar-wrap {
+    background: var(--surface2);
+    border-radius: 999px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 999px;
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  .progress-stats span:last-child {
+    color: var(--accent);
+  }
+
+  /* Habits List */
+  .habits-section {
+    margin-bottom: 40px;
+  }
+
+  .habits-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .add-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .add-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .habit-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 10px;
+    transition: all 0.25s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .habit-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    transform: scaleY(0);
+    transition: transform 0.3s;
+    border-radius: 3px 0 0 3px;
+  }
+
+  .habit-item:hover {
+    border-color: #3a3a44;
+    transform: translateX(2px);
+  }
+
+  .habit-item.completed {
+    border-color: #2a3a2e;
+    background: #141a16;
+  }
+
+  .habit-item.completed::before {
+    background: var(--success);
+    transform: scaleY(1);
+  }
+
+  /* Custom Checkbox */
+  .habit-check {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .habit-item.completed .habit-check {
+    background: var(--success);
+    border-color: var(--success);
+  }
+
+  .habit-check::after {
+    content: '✓';
+    font-size: 0.75rem;
+    color: white;
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-weight: bold;
+  }
+
+  .habit-item.completed .habit-check::after {
+    opacity: 1;
+  }
+
+  .habit-info {
+    flex: 1;
+  }
+
+  .habit-name {
+    font-size: 0.85rem;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+
+  .habit-item.completed .habit-name {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--success);
+  }
+
+  .habit-meta {
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.05em;
+  }
+
+  .habit-streak {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .habit-delete {
+    opacity: 0;
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .habit-item:hover .habit-delete {
+    opacity: 1;
+  }
+
+  /* Add habit form */
+  .add-form {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 10px;
+  }
+
+  .add-form.open { display: block; }
+
+  .add-form input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    border-radius: 8px;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+
+  .add-form input:focus {
+    border-color: var(--accent);
+  }
+
+  .add-form input::placeholder {
+    color: var(--muted);
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover { background: var(--accent2); }
+
+  .btn-ghost {
+    background: none;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-ghost:hover { color: var(--text); border-color: #444; }
+
+  /* Graph Section */
+  .graph-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .graph-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  .graph-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .graph-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  canvas#habitChart {
+    width: 100% !important;
+    height: 180px !important;
+  }
+
+  /* Heatmap */
+  .heatmap-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .heatmap-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+
+  .heatmap-grid {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .heatmap-cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: var(--surface2);
+    transition: transform 0.2s;
+    cursor: default;
+    position: relative;
+  }
+
+  .heatmap-cell:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.55rem;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* Reward Dialog */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .overlay.open { display: flex; }
+
+  .reward-dialog {
+    background: var(--surface);
+    border: 1px solid #3a2a45;
+    border-radius: 20px;
+    padding: 36px;
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+    animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .dialog-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .dialog-close:hover { color: var(--text); }
+
+  .dialog-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #b87fbf, #7a50a0);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+  }
+
+  .dialog-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--reward);
+    margin-bottom: 6px;
+  }
+
+  .dialog-subtitle {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .reward-balance-card {
+    background: linear-gradient(135deg, #1e1825, #241d2e);
+    border: 1px solid #3a2a45;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .balance-label {
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .balance-amount {
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem;
+    color: var(--reward);
+    line-height: 1;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .balance-sub {
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  .reward-breakdown {
+    margin-bottom: 24px;
+  }
+
+  .breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+  }
+
+  .breakdown-item:last-child { border-bottom: none; }
+
+  .breakdown-label { color: var(--muted); }
+  .breakdown-value { color: var(--reward); }
+
+  .redeem-section { }
+
+  .redeem-title {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .reward-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .reward-option {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .reward-option:hover {
+    border-color: var(--reward);
+    background: #1e1825;
+  }
+
+  .reward-option.selected {
+    border-color: var(--reward);
+    background: linear-gradient(135deg, #1e1825, #241d2e);
+  }
+
+  .reward-option .opt-emoji { font-size: 1.3rem; margin-bottom: 4px; }
+  .reward-option .opt-name { font-size: 0.65rem; color: var(--text); }
+  .reward-option .opt-cost { font-size: 0.6rem; color: var(--reward); margin-top: 2px; }
+
+  .redeem-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #b87fbf, #8a50a0);
+    color: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .redeem-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(184, 127, 191, 0.3);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.75rem;
+    padding: 12px 24px;
+    border-radius: 999px;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Confetti */
+  @keyframes confettiFall {
+    to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+  }
+
+  .confetti-piece {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    pointer-events: none;
+    z-index: 300;
+    animation: confettiFall linear forwards;
+  }
+
+  /* Pulse on complete */
+  @keyframes completePulse {
+    0% { box-shadow: 0 0 0 0 rgba(109, 175, 128, 0.4); }
+    70% { box-shadow: 0 0 0 12px rgba(109, 175, 128, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(109, 175, 128, 0); }
+  }
+
+  .habit-item.pulse-anim {
+    animation: completePulse 0.6s ease-out;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    header { flex-direction: column; gap: 12px; }
+    .date-display { text-align: left; }
+    .reward-options { grid-template-columns: 1fr 1fr; }
+    canvas#habitChart { height: 140px !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="logo-area">
+      <h1>Ritual</h1>
+      <div class="tagline">Daily Habit Tracker</div>
+    </div>
+    <div class="date-display">
+      <div class="day" id="dayName"></div>
+      <div class="full-date" id="fullDate"></div>
+    </div>
+  </header>
+
+  <!-- Reward Bar -->
+  <div class="reward-bar" onclick="openReward()">
+    <div class="reward-left">
+      <div class="reward-icon">✨</div>
+      <div>
+        <div class="reward-label">Gem Balance</div>
+        <div class="reward-amount" id="balanceDisplay">0</div>
+      </div>
+    </div>
+    <div class="reward-cta">Open Rewards →</div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-section">
+    <div class="section-label">Today's Progress</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+    <div class="progress-stats">
+      <span id="progressText">0 / 0 habits completed</span>
+      <span id="progressPct">0%</span>
+    </div>
+  </div>
+
+  <!-- Habits -->
+  <div class="habits-section">
+    <div class="habits-header">
+      <div class="section-label">Habits</div>
+      <button class="add-btn" onclick="toggleAddForm()">+ Add Habit</button>
+    </div>
+
+    <div class="add-form" id="addForm">
+      <input type="text" id="habitInput" placeholder="e.g. Morning meditation, Drink 8 glasses..." maxlength="60" onkeydown="if(event.key==='Enter')addHabit()">
+      <div class="form-actions">
+        <button class="btn-primary" onclick="addHabit()">Add</button>
+        <button class="btn-ghost" onclick="toggleAddForm()">Cancel</button>
+      </div>
+    </div>
+
+    <div id="habitList"></div>
+  </div>
+
+  <!-- Completion Graph -->
+  <div class="graph-section">
+    <div class="graph-header">
+      <div class="graph-title">Progress Over Time</div>
+      <div class="graph-legend">
+        <span><span class="legend-dot" style="background:var(--accent)"></span>Completion %</span>
+        <span><span class="legend-dot" style="background:var(--success)"></span>Gems</span>
+      </div>
+    </div>
+    <canvas id="habitChart"></canvas>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="heatmap-section">
+    <div class="heatmap-title">Activity Heatmap</div>
+    <div class="heatmap-grid" id="heatmap"></div>
+  </div>
+</div>
+
+<!-- Reward Dialog -->
+<div class="overlay" id="rewardOverlay" onclick="handleOverlayClick(event)">
+  <div class="reward-dialog">
+    <button class="dialog-close" onclick="closeReward()">✕</button>
+    <div class="dialog-icon">✨</div>
+    <div class="dialog-title">Gem Vault</div>
+    <div class="dialog-subtitle">Earned through consistency</div>
+
+    <div class="reward-balance-card">
+      <div class="balance-label">Total Gems</div>
+      <div class="balance-amount" id="dialogBalance">0</div>
+      <div class="balance-sub">Complete habits to earn gems</div>
+    </div>
+
+    <div class="reward-breakdown">
+      <div class="breakdown-item">
+        <span class="breakdown-label">Today's earned</span>
+        <span class="breakdown-value" id="todayEarned">0 ✨</span>
+      </div>
+      <div class="breakdown-item">
+        <span class="breakdown-label">Total earned (all time)</span>
+        <span class="breakdown-value" id="totalEarned">0 ✨</span>
+      </div>
+      <div class="breakdown-item">
+        <span class="breakdown-label">Total redeemed</span>
+        <span class="breakdown-value" id="totalRedeemed">0 ✨</span>
+      </div>
+      <div class="breakdown-item">
+        <span class="breakdown-label">Best streak bonus</span>
+        <span class="breakdown-value" id="bestStreakBonus">0 ✨</span>
+      </div>
+    </div>
+
+    <div class="redeem-section">
+      <div class="redeem-title">Redeem Gems</div>
+      <div class="reward-options">
+        <div class="reward-option" onclick="selectReward(this, 50)">
+          <div class="opt-emoji">☕</div>
+          <div class="opt-name">Coffee Break</div>
+          <div class="opt-cost">50 gems</div>
+        </div>
+        <div class="reward-option" onclick="selectReward(this, 100)">
+          <div class="opt-emoji">🎮</div>
+          <div class="opt-name">Game Hour</div>
+          <div class="opt-cost">100 gems</div>
+        </div>
+        <div class="reward-option" onclick="selectReward(this, 200)">
+          <div class="opt-emoji">🍕</div>
+          <div class="opt-name">Treat Yourself</div>
+          <div class="opt-cost">200 gems</div>
+        </div>
+        <div class="reward-option" onclick="selectReward(this, 500)">
+          <div class="opt-emoji">🌴</div>
+          <div class="opt-name">Rest Day</div>
+          <div class="opt-cost">500 gems</div>
+        </div>
+      </div>
+      <button class="redeem-btn" onclick="redeemReward()">Redeem Selected Reward</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA HELPERS ──────────────────────────────────────
+const STORAGE_KEY = 'ritual_v3';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {
+    habits: [
+      { id: 1, name: 'Morning meditation', streak: 0 },
+      { id: 2, name: 'Drink 8 glasses of water', streak: 0 },
+      { id: 3, name: 'Exercise for 30 minutes', streak: 0 },
+      { id: 4, name: 'Read for 20 minutes', streak: 0 },
+      { id: 5, name: 'No social media before 10am', streak: 0 },
+    ],
+    completions: {}, // { "YYYY-MM-DD": [id, id, ...] }
+    gems: 0,
+    totalEarned: 0,
+    totalRedeemed: 0,
+    nextId: 6
+  };
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ── APP STATE ─────────────────────────────────────────
+let data = loadData();
+let selectedRewardCost = null;
+
+// ── INIT ──────────────────────────────────────────────
+function init() {
+  // Update date display
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('dayName').textContent = days[now.getDay()];
+  document.getElementById('fullDate').textContent = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`.toUpperCase();
+
+  renderHabits();
+  renderProgress();
+  renderGraph();
+  renderHeatmap();
+  updateBalanceDisplay();
+}
+
+// ── HABITS ────────────────────────────────────────────
+function renderHabits() {
+  const today = todayKey();
+  const completed = data.completions[today] || [];
+  const list = document.getElementById('habitList');
+
+  if (data.habits.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:0.75rem;">No habits yet. Add one above!</div>`;
+    return;
+  }
+
+  list.innerHTML = data.habits.map(h => {
+    const done = completed.includes(h.id);
+    return `
+    <div class="habit-item ${done ? 'completed' : ''}" id="habit-${h.id}" onclick="toggleHabit(${h.id})">
+      <div class="habit-check"></div>
+      <div class="habit-info">
+        <div class="habit-name">${escapeHtml(h.name)}</div>
+        <div class="habit-meta">${h.streak > 0 ? `🔥 ${h.streak} day streak` : 'Start your streak today'}</div>
+      </div>
+      <div class="habit-streak">${done ? '✨+2' : ''}</div>
+      <button class="habit-delete" onclick="deleteHabit(event, ${h.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleHabit(id) {
+  const today = todayKey();
+  if (!data.completions[today]) data.completions[today] = [];
+  const arr = data.completions[today];
+  const idx = arr.indexOf(id);
+
+  if (idx === -1) {
+    arr.push(id);
+    const habit = data.habits.find(h => h.id === id);
+    if (habit) {
+      habit.streak = (habit.streak || 0) + 1;
+    }
+    // Earn gems
+    const gemsEarned = 2;
+    data.gems += gemsEarned;
+    data.totalEarned += gemsEarned;
+
+    // Check all complete bonus
+    if (arr.length === data.habits.length) {
+      data.gems += 10;
+      data.totalEarned += 10;
+      showToast('🎉 All habits done! Bonus +10 gems!');
+      spawnConfetti();
+    } else {
+      showToast(`+2 gems earned ✨`);
+    }
+
+    const el = document.getElementById(`habit-${id}`);
+    if (el) { el.classList.add('pulse-anim'); setTimeout(() => el.classList.remove('pulse-anim'), 700); }
+  } else {
+    arr.splice(idx, 1);
+    const habit = data.habits.find(h => h.id === id);
+    if (habit && habit.streak > 0) habit.streak--;
+    data.gems = Math.max(0, data.gems - 2);
+    data.totalEarned = Math.max(0, data.totalEarned - 2);
+  }
+
+  saveData(data);
+  renderHabits();
+  renderProgress();
+  renderGraph();
+  renderHeatmap();
+  updateBalanceDisplay();
+}
+
+function deleteHabit(e, id) {
+  e.stopPropagation();
+  data.habits = data.habits.filter(h => h.id !== id);
+  // Remove from today's completions
+  const today = todayKey();
+  if (data.completions[today]) {
+    data.completions[today] = data.completions[today].filter(x => x !== id);
+  }
+  saveData(data);
+  renderHabits();
+  renderProgress();
+}
+
+function toggleAddForm() {
+  const f = document.getElementById('addForm');
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) document.getElementById('habitInput').focus();
+}
+
+function addHabit() {
+  const input = document.getElementById('habitInput');
+  const name = input.value.trim();
+  if (!name) return;
+  data.habits.push({ id: data.nextId++, name, streak: 0 });
+  input.value = '';
+  document.getElementById('addForm').classList.remove('open');
+  saveData(data);
+  renderHabits();
+  renderProgress();
+  showToast('Habit added!');
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── PROGRESS ──────────────────────────────────────────
+function renderProgress() {
+  const today = todayKey();
+  const completed = (data.completions[today] || []).length;
+  const total = data.habits.length;
+  const pct = total ? Math.round((completed / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${completed} / ${total} habits completed`;
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+// ── GRAPH ─────────────────────────────────────────────
+let chartInstance = null;
+
+function renderGraph() {
+  const canvas = document.getElementById('habitChart');
+  const ctx = canvas.getContext('2d');
+
+  // Get last 14 days
+  const labels = [];
+  const pcts = [];
+  const gemsPerDay = [];
+  const now = new Date();
+
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const comp = data.completions[key] || [];
+    const total = data.habits.length || 1;
+    const pct = Math.round((comp.length / total) * 100);
+    labels.push(`${d.getDate()}/${d.getMonth()+1}`);
+    pcts.push(pct);
+    gemsPerDay.push(comp.length * 2 + (comp.length === data.habits.length && data.habits.length > 0 ? 10 : 0));
+  }
+
+  // Clear canvas
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 180 * dpr;
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width;
+  const H = 180;
+  const pad = { top: 20, right: 20, bottom: 30, left: 36 };
+  const gW = W - pad.left - pad.right;
+  const gH = H - pad.top - pad.bottom;
+
+  // Background
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = '#2a2a32';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (gH / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(W - pad.right, y);
+    ctx.stroke();
+  }
+
+  // Y-axis labels
+  ctx.fillStyle = '#7a7870';
+  ctx.font = `${10 / dpr}px DM Mono`;
+  ctx.textAlign = 'right';
+  ['100%','75%','50%','25%','0%'].forEach((lbl, i) => {
+    ctx.fillText(lbl, pad.left - 6, pad.top + (gH / 4) * i + 4);
+  });
+
+  // X-axis labels
+  ctx.fillStyle = '#7a7870';
+  ctx.textAlign = 'center';
+  labels.forEach((lbl, i) => {
+    if (i % 2 === 0) {
+      const x = pad.left + (gW / (labels.length - 1)) * i;
+      ctx.fillText(lbl, x, H - 8);
+    }
+  });
+
+  // Area fill for % line
+  const gradient = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+  gradient.addColorStop(0, 'rgba(200, 169, 110, 0.3)');
+  gradient.addColorStop(1, 'rgba(200, 169, 110, 0)');
+  ctx.beginPath();
+  pcts.forEach((v, i) => {
+    const x = pad.left + (gW / (pcts.length - 1)) * i;
+    const y = pad.top + gH - (v / 100) * gH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.lineTo(pad.left + gW, H - pad.bottom);
+  ctx.lineTo(pad.left, H - pad.bottom);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  // Line for %
+  ctx.beginPath();
+  ctx.strokeStyle = '#c8a96e';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  pcts.forEach((v, i) => {
+    const x = pad.left + (gW / (pcts.length - 1)) * i;
+    const y = pad.top + gH - (v / 100) * gH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Gems bars (scaled to same height)
+  const maxGems = Math.max(...gemsPerDay, 1);
+  const barW = Math.max(4, gW / labels.length * 0.3);
+  gemsPerDay.forEach((g, i) => {
+    const x = pad.left + (gW / (labels.length - 1)) * i - barW / 2;
+    const barH = (g / maxGems) * gH * 0.5;
+    const y = H - pad.bottom - barH;
+    ctx.fillStyle = 'rgba(109, 175, 128, 0.5)';
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x, y, barW, barH, 2) : ctx.rect(x, y, barW, barH);
+    ctx.fill();
+  });
+
+  // Dots on line
+  pcts.forEach((v, i) => {
+    const x = pad.left + (gW / (pcts.length - 1)) * i;
+    const y = pad.top + gH - (v / 100) * gH;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#c8a96e';
+    ctx.fill();
+    ctx.strokeStyle = '#0d0d0f';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+
+// ── HEATMAP ───────────────────────────────────────────
+function renderHeatmap() {
+  const container = document.getElementById('heatmap');
+  const now = new Date();
+  const cells = [];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const comp = data.completions[key] || [];
+    const total = data.habits.length || 1;
+    const ratio = comp.length / total;
+    const label = `${d.getDate()} ${months[d.getMonth()]}: ${comp.length}/${total}`;
+
+    let color;
+    if (comp.length === 0) color = 'var(--surface2)';
+    else if (ratio < 0.25) color = '#2a4a30';
+    else if (ratio < 0.5) color = '#3d6e45';
+    else if (ratio < 0.75) color = '#5a9e65';
+    else color = '#6daf80';
+
+    cells.push(`<div class="heatmap-cell" style="background:${color}" data-tip="${label}"></div>`);
+  }
+
+  container.innerHTML = cells.join('');
+}
+
+// ── REWARDS ───────────────────────────────────────────
+function updateBalanceDisplay() {
+  document.getElementById('balanceDisplay').textContent = data.gems;
+  document.getElementById('dialogBalance').textContent = data.gems;
+  const today = todayKey();
+  const comp = data.completions[today] || [];
+  const bonus = comp.length === data.habits.length && data.habits.length > 0 ? 10 : 0;
+  document.getElementById('todayEarned').textContent = `${comp.length * 2 + bonus} ✨`;
+  document.getElementById('totalEarned').textContent = `${data.totalEarned || 0} ✨`;
+  document.getElementById('totalRedeemed').textContent = `${data.totalRedeemed || 0} ✨`;
+  // Best streak
+  const best = Math.max(...data.habits.map(h => h.streak || 0), 0);
+  document.getElementById('bestStreakBonus').textContent = `${best * 5} ✨`;
+}
+
+function openReward() {
+  selectedRewardCost = null;
+  document.querySelectorAll('.reward-option').forEach(o => o.classList.remove('selected'));
+  updateBalanceDisplay();
+  document.getElementById('rewardOverlay').classList.add('open');
+}
+
+function closeReward() {
+  document.getElementById('rewardOverlay').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('rewardOverlay')) closeReward();
+}
+
+function selectReward(el, cost) {
+  document.querySelectorAll('.reward-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedRewardCost = cost;
+}
+
+function redeemReward() {
+  if (!selectedRewardCost) { showToast('Please select a reward first'); return; }
+  if (data.gems < selectedRewardCost) {
+    showToast(`Not enough gems! Need ${selectedRewardCost}, have ${data.gems}`);
+    return;
+  }
+  data.gems -= selectedRewardCost;
+  data.totalRedeemed = (data.totalRedeemed || 0) + selectedRewardCost;
+  saveData(data);
+  updateBalanceDisplay();
+  spawnConfetti();
+  showToast(`🎁 Reward redeemed! Enjoy!`);
+  selectedRewardCost = null;
+  document.querySelectorAll('.reward-option').forEach(o => o.classList.remove('selected'));
+}
+
+// ── FX ────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function spawnConfetti() {
+  const colors = ['#c8a96e','#6daf80','#b87fbf','#e07060','#5a9ec8'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.top = '-10px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+    el.style.width = (6 + Math.random() * 6) + 'px';
+    el.style.height = (6 + Math.random() * 6) + 'px';
+    el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    el.style.animationDelay = Math.random() * 0.5 + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+}
+
+// ── RESIZE ────────────────────────────────────────────
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderGraph, 150);
+});
+
+// ── START ─────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

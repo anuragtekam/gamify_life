@@ -674,7 +674,7 @@ function renderHabits() {
         <div class="hname">${esc(h.name)}</div>
         <div class="hmeta">${h.streak>0?`🔥 ${h.streak} day streak`:'Start your streak today'}</div>
       </div>
-      <div class="hgem">${d?'✨+2':''}</div>
+      <div class="hgem">${d?'✨+1':''}</div>
       <button class="hdel" onclick="window._del(event,${h.id})">✕</button>
     </div>`;
   }).join('');

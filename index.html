@@ -690,14 +690,14 @@ window._tog = function(id) {
     arr.push(id);
     const h = appData.habits.find(x=>x.id===id);
     if (h) h.streak = (h.streak||0)+1;
-    appData.gems += 2; appData.totalEarned += 2;
+    appData.gems += 1; appData.totalEarned += 1;
 
     if (arr.length === appData.habits.length) {
       appData.gems += 10; appData.totalEarned += 10;
       toast('🎉 All habits done! Bonus +10 gems!');
       confetti();
     } else {
-      toast('+2 gems earned ✨');
+      toast('+1 gems earned ✨');
     }
     const el = document.getElementById(`h${id}`);
     if (el) { el.classList.add('pulse'); setTimeout(()=>el.classList.remove('pulse'),700); }
@@ -705,8 +705,8 @@ window._tog = function(id) {
     arr.splice(idx,1);
     const h = appData.habits.find(x=>x.id===id);
     if (h&&h.streak>0) h.streak--;
-    appData.gems        = Math.max(0,appData.gems-2);
-    appData.totalEarned = Math.max(0,appData.totalEarned-2);
+    appData.gems        = Math.max(0,appData.gems-1);
+    appData.totalEarned = Math.max(0,appData.totalEarned-1);
   }
   save(appData); render();
 };

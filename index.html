@@ -746,52 +746,99 @@ function sync(state, msg) {
 }
 
 // ══════════════════════════════════════════════════════
-//  FIRESTORE HELPERS
+//  FIRESTORE HELPERS  — timeout-safe, never hangs
 // ══════════════════════════════════════════════════════
+
+// Race any promise against a ms timeout; returns null on timeout or error
+function withTimeout(p, ms) {
+  return Promise.race([
+    p,
+    new Promise(res => setTimeout(() => res(null), ms))
+  ]).catch(() => null);
+}
+
 async function fsGet(username) {
   try {
-    const snap = await getDoc(doc(db, 'users', username));
-    return snap.exists() ? snap.data() : null;
-  } catch(e) { console.warn('fsGet failed', e); return null; }
+    const snap = await withTimeout(getDoc(doc(db, 'users', username)), 7000);
+    if (!snap || !snap.exists()) return null;
+    const d = snap.data();
+    return { name: d.name || username, data: d.data || null };
+  } catch(e) { console.warn('fsGet:', e); return null; }
 }
 
 async function fsCreate(username, name) {
-  await setDoc(doc(db, 'users', username), {
-    name, createdAt: serverTimestamp(), data: blank()
-  });
+  const initial = blank();
+  await withTimeout(
+    setDoc(doc(db, 'users', username), { name, createdAt: serverTimestamp(), data: initial }),
+    8000
+  );
+  return initial;
 }
 
-async function fsPush(username, d) {
+// Push to Firestore, strip _dirty flag on success
+async function fsPushClean(username, d) {
   try {
     sync('syncing', '↑ Saving…');
-    await updateDoc(doc(db, 'users', username), { data: d, updatedAt: serverTimestamp() });
-    localStorage.setItem(CACHE_PFX + username, JSON.stringify(d));
-    sync('ok', '✓ Synced');
+    const clean = JSON.parse(JSON.stringify(d));
+    delete clean._dirty;
+
+    // Wrap updateDoc so we can distinguish "resolved" from "timed out"
+    let succeeded = false;
+    await withTimeout(
+      updateDoc(doc(db, 'users', username), { data: clean, updatedAt: serverTimestamp() })
+        .then(() => { succeeded = true; }),
+      8000
+    );
+
+    if (succeeded) {
+      if (appData) appData._dirty = false;
+      localStorage.setItem(CACHE_PFX + username, JSON.stringify(clean));
+      sync('ok', '✓ Synced');
+    } else {
+      sync('err', '⚠ Offline — saved locally');
+      scheduleRetry(username, d);
+    }
   } catch(e) {
-    localStorage.setItem(CACHE_PFX + username, JSON.stringify(d));
     sync('err', '⚠ Offline — saved locally');
-    retryLater(username, d);
+    scheduleRetry(username, d);
   }
 }
 
-function retryLater(username, d) {
+function scheduleRetry(username, d) {
   setTimeout(async () => {
     try {
-      await updateDoc(doc(db, 'users', username), { data: d, updatedAt: serverTimestamp() });
+      const clean = JSON.parse(JSON.stringify(d)); delete clean._dirty;
+      await withTimeout(
+        updateDoc(doc(db, 'users', username), { data: clean, updatedAt: serverTimestamp() }),
+        8000
+      );
+      if (appData) appData._dirty = false;
+      localStorage.setItem(CACHE_PFX + username, JSON.stringify(clean));
       sync('ok', '✓ Back online — synced');
-    } catch(e) { retryLater(username, d); }
-  }, 10000);
+    } catch(e) { scheduleRetry(username, d); }
+  }, 12000);
 }
 
 function getCache(username) {
   try { return JSON.parse(localStorage.getItem(CACHE_PFX + username)); } catch(e) { return null; }
 }
 
+// Remote wins unless local has dirty (unsaved) writes with equal/higher gem count
+function resolveData(remote, cache) {
+  if (!cache) return { data: remote, pushNeeded: false };
+  if (cache._dirty) {
+    const useLocal = (cache.totalEarned || 0) >= (remote.totalEarned || 0);
+    return { data: useLocal ? cache : remote, pushNeeded: useLocal };
+  }
+  return { data: remote, pushNeeded: false };
+}
+
 function save(d) {
   appData = d;
+  d._dirty = true;
   localStorage.setItem(CACHE_PFX + curUser.username, JSON.stringify(d));
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => fsPush(curUser.username, d), 900);
+  saveTimer = setTimeout(() => fsPushClean(curUser.username, d), 900);
 }
 
 // ══════════════════════════════════════════════════════
@@ -805,43 +852,58 @@ function hideSplash() {
 }
 
 // ══════════════════════════════════════════════════════
-//  BOOT
+//  BOOT — always escapes the splash screen no matter what
 // ══════════════════════════════════════════════════════
 async function boot() {
-  splashTxt('Connecting to Firebase…');
+  // Absolute safety net: if anything hangs past 10 s, go to login
+  const escapeHatch = setTimeout(() => {
+    console.warn('Boot timeout — forcing login screen');
+    hideSplash(); showLoginScreen();
+  }, 10000);
 
-  const session = (() => { try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e){return null;} })();
+  const done = () => clearTimeout(escapeHatch);
 
-  if (session?.username) {
-    splashTxt(`Loading ${session.name}'s data…`);
-    const remote = await fsGet(session.username);
-    if (remote) {
-      curUser = { username: session.username, name: remote.name };
+  try {
+    splashTxt('Connecting…');
+
+    const session = (() => {
+      try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e) { return null; }
+    })();
+
+    if (session?.username) {
+      splashTxt(`Loading ${session.name}'s data…`);
+
+      const remote = await fsGet(session.username);  // 7 s timeout inside
+
+      if (remote?.data) {
+        curUser = { username: session.username, name: remote.name };
+        const { data, pushNeeded } = resolveData(remote.data, getCache(session.username));
+        appData = data;
+        if (pushNeeded) fsPushClean(curUser.username, appData);
+        purgeStaleTempHabits(appData);
+        resetStaleStepProgress(appData);
+        done(); hideSplash(); enterApp(); return;
+      }
+
+      // Firebase unavailable or doc has no data — fall back to local cache
       const cache = getCache(session.username);
-      if (cache && JSON.stringify(cache) !== JSON.stringify(remote.data)) {
+      if (cache) {
+        curUser = { username: session.username, name: session.name };
         appData = cache;
-        fsPush(curUser.username, cache);
-      } else {
-        appData = remote.data || blank();
+        sync('err', '⚠ Offline — using cached data');
+        done(); hideSplash(); enterApp(); return;
       }
-
-      // Purge stale temp tasks on load
-      const purged = purgeStaleTempHabits(appData);
-      const stepsReset = resetStaleStepProgress(appData);
-      if (purged || stepsReset) {
-        save(appData);
-        if (purged) toast('⏳ Temporary tasks from yesterday removed');
-      }
-
-      hideSplash();
-      enterApp();
-      return;
+      // No cache either — drop to login
     }
-  }
 
-  hideSplash();
-  showLoginScreen();
+    done(); hideSplash(); showLoginScreen();
+
+  } catch(e) {
+    console.error('Boot error:', e);
+    done(); hideSplash(); showLoginScreen();
+  }
 }
+
 
 // ══════════════════════════════════════════════════════
 //  LOGIN
@@ -871,15 +933,27 @@ window._chipLogin = async function(username) {
   const remote = await fsGet(username);
   if (remote) {
     curUser = { username, name: remote.name };
-    appData = remote.data || blank();
-    const purged = purgeStaleTempHabits(appData);
+    const cache = getCache(username);
+    const { data, pushNeeded } = resolveData(remote.data || blank(), cache);
+    appData = data;
+    if (pushNeeded) fsPushClean(username, appData);
+    purgeStaleTempHabits(appData);
     resetStaleStepProgress(appData);
-    if (purged) save(appData);
     saveSession();
     enterApp();
   } else {
-    toast('User not found in database');
-    setLoading(false);
+    // Offline fallback
+    const cache = getCache(username);
+    if (cache) {
+      curUser = { username, name: username };
+      appData = cache;
+      sync('err', '⚠ Offline — using cached data');
+      saveSession();
+      enterApp();
+    } else {
+      toast('User not found. Check connection and try again.');
+      setLoading(false);
+    }
   }
 };
 
@@ -919,11 +993,14 @@ window.doLogin = async function() {
   const remote = await fsGet(username);
 
   if (remote) {
+    // Existing user — always load from Firebase (new device gets full data)
     curUser = { username, name: remote.name };
-    appData = remote.data || blank();
-    const purged = purgeStaleTempHabits(appData);
+    const cache = getCache(username);
+    const { data, pushNeeded } = resolveData(remote.data || blank(), cache);
+    appData = data;
+    if (pushNeeded) fsPushClean(username, appData);
+    purgeStaleTempHabits(appData);
     resetStaleStepProgress(appData);
-    if (purged) save(appData);
     saveSession();
     enterApp();
   } else {

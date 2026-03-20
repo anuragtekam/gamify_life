@@ -13,6 +13,7 @@
     --border: #2a2a32; --accent: #c8a96e; --accent2: #e8c88e;
     --text: #e8e4dc; --muted: #7a7870; --danger: #e07060;
     --success: #6daf80; --reward: #b87fbf;
+    --temp: #5a9ec8; --temp-bg: #1a2535;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; overflow-x: hidden; }
@@ -124,27 +125,128 @@
   .habits-hdr{ display:flex;justify-content:space-between;align-items:center;margin-bottom:16px; }
   .add-btn{ background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;padding:6px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s; }
   .add-btn:hover{ border-color:var(--accent);color:var(--accent); }
+
+  /* SECTION LABELS for Permanent / Temp */
+  .habit-section-label {
+    font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); margin: 18px 0 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .habit-section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+  .habit-section-label.temp-lbl { color: var(--temp); }
+  .habit-section-label.temp-lbl::after { background: rgba(90,158,200,0.2); }
+
   .habit{ background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;margin-bottom:10px;cursor:pointer;position:relative;overflow:hidden;transition:all 0.25s; }
   .habit::before{ content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);transform:scaleY(0);transition:transform 0.3s;border-radius:3px 0 0 3px; }
   .habit:hover{ border-color:#3a3a44;transform:translateX(2px); }
   .habit.done{ border-color:#2a3a2e;background:#141a16; }
   .habit.done::before{ background:var(--success);transform:scaleY(1); }
+
+  /* TEMP habit styling */
+  .habit.temp-habit { border-color: rgba(90,158,200,0.2); background: var(--temp-bg); }
+  .habit.temp-habit::before { background: var(--temp); }
+  .habit.temp-habit:hover { border-color: rgba(90,158,200,0.45); }
+  .habit.temp-habit.done { border-color: rgba(109,175,128,0.35); background: #141a16; }
+
   .hchk{ width:22px;height:22px;border:2px solid var(--border);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative; }
   .habit.done .hchk{ background:var(--success);border-color:var(--success); }
   .hchk::after{ content:'✓';font-size:0.75rem;color:white;opacity:0;transition:opacity 0.2s;font-weight:bold; }
   .habit.done .hchk::after{ opacity:1; }
-  .hinfo{ flex:1; }
-  .hname{ font-size:0.85rem;color:var(--text);transition:all 0.2s; }
+  .hinfo{ flex:1;min-width:0; }
+  .hname{ font-size:0.85rem;color:var(--text);transition:all 0.2s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .habit.done .hname{ color:var(--muted);text-decoration:line-through;text-decoration-color:var(--success); }
-  .hmeta{ font-size:0.6rem;color:var(--muted);margin-top:3px;letter-spacing:0.05em; }
+  .hmeta{ font-size:0.6rem;color:var(--muted);margin-top:3px;letter-spacing:0.05em;display:flex;align-items:center;gap:6px; }
+
+  /* TEMP badge */
+  .temp-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: rgba(90,158,200,0.15); border: 1px solid rgba(90,158,200,0.3);
+    color: var(--temp); font-size: 0.52rem; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 2px 6px; border-radius: 999px;
+    flex-shrink: 0;
+  }
+
   .hgem{ font-size:0.65rem;color:var(--accent);flex-shrink:0; }
   .hdel{ opacity:0;background:none;border:none;color:var(--danger);font-size:0.75rem;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all 0.2s;flex-shrink:0; }
   .habit:hover .hdel{ opacity:1; }
+
+  /* STEPS */
+  .habit.has-steps { cursor:default; }
+  .habit.has-steps:hover { transform:none; }
+  .steps-wrap {
+    width: 100%; margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .steps-bar-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+  }
+  .steps-track {
+    flex: 1; height: 5px; background: var(--surface2); border-radius: 999px; overflow: hidden;
+  }
+  .steps-fill {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .steps-fill.complete { background: linear-gradient(90deg, var(--success), #8ae0a0); }
+  .steps-counter {
+    font-size: 0.62rem; color: var(--muted); white-space: nowrap; min-width: 44px; text-align: right;
+  }
+  .steps-counter.complete { color: var(--success); }
+  .steps-btns {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .step-btn {
+    width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 1rem; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s; flex-shrink: 0; font-family: 'DM Mono', monospace;
+  }
+  .step-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: rgba(200,169,110,0.08); transform: scale(1.08); }
+  .step-btn.up:hover:not(:disabled) { border-color: var(--success); color: var(--success); background: rgba(109,175,128,0.08); }
+  .step-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .step-btn:active:not(:disabled) { transform: scale(0.93); }
+  .steps-lbl {
+    flex: 1; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.05em;
+  }
+  @keyframes stepPop { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
+  .steps-fill.pop { animation: stepPop 0.3s ease-out; }
+
+  /* ADD FORM */
   .add-form{ display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:10px; }
   .add-form.open{ display:block; }
   .add-form input{ width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:0.85rem;padding:10px 14px;border-radius:8px;outline:none;margin-bottom:12px;transition:border-color 0.2s; }
   .add-form input:focus{ border-color:var(--accent); }
   .add-form input::placeholder{ color:var(--muted); }
+
+  /* TEMP TOGGLE in form */
+  .temp-toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 12px; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .temp-toggle-row:hover { border-color: var(--temp); }
+  .temp-toggle-row.active { border-color: rgba(90,158,200,0.5); background: rgba(26,37,53,0.6); }
+  .temp-toggle-left { display: flex; align-items: center; gap: 10px; }
+  .temp-icon { font-size: 0.9rem; }
+  .temp-toggle-info { }
+  .temp-toggle-title { font-size: 0.72rem; color: var(--text); }
+  .temp-toggle-desc  { font-size: 0.58rem; color: var(--muted); margin-top: 2px; }
+  .temp-toggle-row.active .temp-toggle-title { color: var(--temp); }
+
+  /* PILL SWITCH */
+  .pill-switch {
+    width: 36px; height: 20px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 999px; position: relative; transition: all 0.25s; flex-shrink: 0;
+  }
+  .pill-switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--muted); transition: all 0.25s;
+  }
+  .pill-switch.on { background: rgba(90,158,200,0.25); border-color: var(--temp); }
+  .pill-switch.on::after { transform: translateX(16px); background: var(--temp); }
+
   .form-btns{ display:flex;gap:8px; }
   .btn-p{ background:var(--accent);color:var(--bg);font-family:'DM Mono',monospace;font-size:0.7rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;padding:8px 18px;border:none;border-radius:6px;cursor:pointer;transition:all 0.2s; }
   .btn-p:hover{ background:var(--accent2); }
@@ -203,11 +305,15 @@
   @keyframes fall{ to{transform:translateY(100vh) rotate(360deg);opacity:0} }
   .cf{ position:fixed;pointer-events:none;z-index:300;animation:fall linear forwards; }
 
+  /* EMPTY STATE */
+  .empty-state { text-align:center;padding:32px 20px;color:var(--muted);font-size:.75rem;border:1px dashed var(--border);border-radius:12px; }
+
   @media(max-width:480px){
     header{flex-direction:column;gap:12px;}
     .date-box .dy,.date-box .dt{text-align:left;}
     .ropts{grid-template-columns:1fr 1fr;}
     canvas#chart{height:140px!important;}
+    .hname{font-size:0.78rem;}
   }
 </style>
 </head>
@@ -306,14 +412,48 @@
       <div class="sec-lbl">Habits</div>
       <button class="add-btn" onclick="toggleForm()">+ Add Habit</button>
     </div>
+
+    <!-- Add form -->
     <div class="add-form" id="addForm">
       <input type="text" id="hInput" placeholder="e.g. Morning meditation…" maxlength="60"
         onkeydown="if(event.key==='Enter')addHabit()">
+
+      <!-- Temporary toggle -->
+      <div class="temp-toggle-row" id="tempToggleRow" onclick="toggleTempSwitch()">
+        <div class="temp-toggle-left">
+          <div class="temp-icon">⏳</div>
+          <div class="temp-toggle-info">
+            <div class="temp-toggle-title">Temporary Task</div>
+            <div class="temp-toggle-desc">Auto-deleted after today — one-time habit</div>
+          </div>
+        </div>
+        <div class="pill-switch" id="pillSwitch"></div>
+      </div>
+
+      <!-- Steps toggle -->
+      <div class="temp-toggle-row" id="stepsToggleRow" onclick="toggleStepsSwitch()" style="border-color:var(--border)">
+        <div class="temp-toggle-left">
+          <div class="temp-icon">🪜</div>
+          <div class="temp-toggle-info">
+            <div class="temp-toggle-title" id="stepsToggleTitle">Enable Steps</div>
+            <div class="temp-toggle-desc">Break this habit into countable steps</div>
+          </div>
+        </div>
+        <div class="pill-switch" id="pillSwitchSteps"></div>
+      </div>
+
+      <!-- Steps count input — shown only when steps enabled -->
+      <div id="stepsCountWrap" style="display:none;margin-bottom:12px;">
+        <input type="number" id="stepsInput" placeholder="Number of steps (e.g. 10)" min="2" max="100"
+          style="margin-bottom:0" onkeydown="if(event.key==='Enter')addHabit()">
+      </div>
+
       <div class="form-btns">
         <button class="btn-p" onclick="addHabit()">Add</button>
         <button class="btn-g" onclick="toggleForm()">Cancel</button>
       </div>
     </div>
+
     <div id="habitList"></div>
   </div>
 
@@ -344,7 +484,7 @@
     <div class="rcard">
       <div class="rclbl">Total Gems</div>
       <div class="rcamt" id="dGems">0</div>
-      <div class="rcsub">Complete habits to earn gems</div>
+      <div class="rcsub">Complete habits to earn 5 gems each</div>
     </div>
     <div class="rbdown">
       <div class="rbi"><span class="rbi-l">Today's earned</span>    <span class="rbi-v" id="dToday">0 ✨</span></div>
@@ -387,27 +527,60 @@ const fbApp = initializeApp(firebaseConfig);
 const db    = getFirestore(fbApp);
 
 // ══════════════════════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════════════════════
+const GEMS_PER_HABIT  = 5;   // ← Changed from 1 to 5
+const BONUS_ALL_DONE  = 10;  // bonus gems for completing all habits
+const SESSION_KEY     = 'ritual_session';
+const CACHE_PFX       = 'ritual_cache_';
+
+// ══════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════
-const SESSION_KEY = 'ritual_session';
-const CACHE_PFX   = 'ritual_cache_';
-
-let appData   = null;   // current user's habit data
-let curUser   = null;   // { username, name }
-let selCost   = null;   // selected reward cost
+let appData   = null;
+let curUser   = null;
+let selCost   = null;
 let saveTimer = null;
+let isTempMode  = false;  // current form toggle state
+let isStepsMode = false;  // steps toggle state in form
 
 function blank() {
   return {
     habits:[
-      {id:1,name:'Morning meditation',       streak:0},
-      {id:2,name:'Drink 8 glasses of water', streak:0},
-      {id:3,name:'Exercise for 30 minutes',  streak:0},
-      {id:4,name:'Read for 20 minutes',      streak:0},
-      {id:5,name:'No social media before 10am',streak:0},
+      {id:1, name:'Morning meditation',        streak:0, temp:false},
+      {id:2, name:'Drink 8 glasses of water',  streak:0, temp:false},
+      {id:3, name:'Exercise for 30 minutes',   streak:0, temp:false},
+      {id:4, name:'Read for 20 minutes',       streak:0, temp:false},
+      {id:5, name:'No social media before 10am',streak:0,temp:false},
     ],
     completions:{}, gems:0, totalEarned:0, totalRedeemed:0, nextId:6
   };
+}
+
+// ══════════════════════════════════════════════════════
+//  TEMPORARY TASK CLEANUP
+//  Runs on boot: removes temp habits that were created
+//  on a previous day (i.e., createdDate !== today).
+// ══════════════════════════════════════════════════════
+function purgeStaleTempHabits(data) {
+  const today = todayKey();
+  const before = data.habits.length;
+  data.habits = data.habits.filter(h => {
+    if (!h.temp) return true;                  // permanent → keep
+    return h.createdDate === today;            // temp → keep only if created today
+  });
+  return data.habits.length < before;          // returns true if any were removed
+}
+
+// Reset stepProgress for step-habits each new day
+function resetStaleStepProgress(data) {
+  const today = todayKey();
+  if (data._stepResetDate === today) return false; // already reset today
+  data.habits.forEach(h => {
+    if (h.steps && h.steps > 0) h.stepProgress = 0;
+  });
+  data._stepResetDate = today;
+  return true;
 }
 
 // ══════════════════════════════════════════════════════
@@ -464,10 +637,9 @@ function getCache(username) {
   try { return JSON.parse(localStorage.getItem(CACHE_PFX + username)); } catch(e) { return null; }
 }
 
-// Debounced — batches rapid taps into 1 Firestore write
 function save(d) {
   appData = d;
-  localStorage.setItem(CACHE_PFX + curUser.username, JSON.stringify(d)); // instant local
+  localStorage.setItem(CACHE_PFX + curUser.username, JSON.stringify(d));
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => fsPush(curUser.username, d), 900);
 }
@@ -496,13 +668,21 @@ async function boot() {
     if (remote) {
       curUser = { username: session.username, name: remote.name };
       const cache = getCache(session.username);
-      // If we have a local cache that differs, it means we were offline — push it
       if (cache && JSON.stringify(cache) !== JSON.stringify(remote.data)) {
         appData = cache;
-        fsPush(curUser.username, cache); // fire & forget
+        fsPush(curUser.username, cache);
       } else {
         appData = remote.data || blank();
       }
+
+      // Purge stale temp tasks on load
+      const purged = purgeStaleTempHabits(appData);
+      const stepsReset = resetStaleStepProgress(appData);
+      if (purged || stepsReset) {
+        save(appData);
+        if (purged) toast('⏳ Temporary tasks from yesterday removed');
+      }
+
       hideSplash();
       enterApp();
       return;
@@ -542,6 +722,9 @@ window._chipLogin = async function(username) {
   if (remote) {
     curUser = { username, name: remote.name };
     appData = remote.data || blank();
+    const purged = purgeStaleTempHabits(appData);
+    resetStaleStepProgress(appData);
+    if (purged) save(appData);
     saveSession();
     enterApp();
   } else {
@@ -588,6 +771,9 @@ window.doLogin = async function() {
   if (remote) {
     curUser = { username, name: remote.name };
     appData = remote.data || blank();
+    const purged = purgeStaleTempHabits(appData);
+    resetStaleStepProgress(appData);
+    if (purged) save(appData);
     saveSession();
     enterApp();
   } else {
@@ -656,30 +842,127 @@ function todayKey() {
 }
 
 // ══════════════════════════════════════════════════════
-//  HABITS
+//  TEMP TOGGLE (in add form)
+// ══════════════════════════════════════════════════════
+window.toggleTempSwitch = function() {
+  isTempMode = !isTempMode;
+  const sw  = document.getElementById('pillSwitch');
+  const row = document.getElementById('tempToggleRow');
+  sw.classList.toggle('on', isTempMode);
+  row.classList.toggle('active', isTempMode);
+};
+
+// ══════════════════════════════════════════════════════
+//  STEPS TOGGLE (in add form)
+// ══════════════════════════════════════════════════════
+window.toggleStepsSwitch = function() {
+  isStepsMode = !isStepsMode;
+  const sw   = document.getElementById('pillSwitchSteps');
+  const row  = document.getElementById('stepsToggleRow');
+  const wrap = document.getElementById('stepsCountWrap');
+  const ttl  = document.getElementById('stepsToggleTitle');
+  sw.classList.toggle('on', isStepsMode);
+  // reuse temp active style but with accent colour override
+  row.style.borderColor = isStepsMode ? 'rgba(200,169,110,0.45)' : 'var(--border)';
+  row.style.background  = isStepsMode ? 'rgba(200,169,110,0.06)'  : '';
+  ttl.style.color       = isStepsMode ? 'var(--accent)' : '';
+  wrap.style.display    = isStepsMode ? 'block' : 'none';
+  if (isStepsMode) document.getElementById('stepsInput').focus();
+};
+
+// ══════════════════════════════════════════════════════
+//  HABITS RENDER
 // ══════════════════════════════════════════════════════
 function renderHabits() {
   const today = todayKey();
   const done  = appData.completions[today] || [];
   const el    = document.getElementById('habitList');
+
+  const permanent = appData.habits.filter(h => !h.temp);
+  const temporary = appData.habits.filter(h =>  h.temp);
+
   if (!appData.habits.length) {
-    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:.75rem">No habits yet. Add one above!</div>`;
+    el.innerHTML = `<div class="empty-state">No habits yet. Add one above!</div>`;
     return;
   }
-  el.innerHTML = appData.habits.map(h => {
-    const d = done.includes(h.id);
-    return `<div class="habit ${d?'done':''}" id="h${h.id}" onclick="window._tog(${h.id})">
-      <div class="hchk"></div>
-      <div class="hinfo">
-        <div class="hname">${esc(h.name)}</div>
-        <div class="hmeta">${h.streak>0?`🔥 ${h.streak} day streak`:'Start your streak today'}</div>
-      </div>
-      <div class="hgem">${d?'✨+1':''}</div>
-      <button class="hdel" onclick="window._del(event,${h.id})">✕</button>
-    </div>`;
-  }).join('');
+
+  let html = '';
+
+  // ── Permanent section ──
+  if (permanent.length) {
+    html += `<div class="habit-section-label">📌 Permanent</div>`;
+    html += permanent.map(h => habitHTML(h, done)).join('');
+  }
+
+  // ── Temporary section ──
+  if (temporary.length) {
+    html += `<div class="habit-section-label temp-lbl">⏳ Today Only</div>`;
+    html += temporary.map(h => habitHTML(h, done)).join('');
+  }
+
+  el.innerHTML = html;
 }
 
+function habitHTML(h, done) {
+  const d = done.includes(h.id);
+  const tempBadge = h.temp
+    ? `<span class="temp-badge">⏳ today</span>`
+    : '';
+  const streakTxt = h.streak > 0
+    ? `🔥 ${h.streak} day streak`
+    : (h.temp ? 'One-time task' : 'Start your streak today');
+
+  // ── Steps habit ──
+  if (h.steps && h.steps > 0) {
+    const cur     = h.stepProgress || 0;
+    const total   = h.steps;
+    const pct     = Math.round(cur / total * 100);
+    const done_s  = cur >= total;
+    const fillCls = done_s ? 'complete' : '';
+    const cntCls  = done_s ? 'complete' : '';
+
+    return `<div class="habit has-steps ${done_s?'done':''} ${h.temp?'temp-habit':''}" id="h${h.id}">
+      <div class="hchk"></div>
+      <div class="hinfo" style="width:100%">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+          <div class="hname" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%">${esc(h.name)}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            ${tempBadge}
+            <span class="hgem" style="font-size:0.62rem">${done_s ? `✨+${GEMS_PER_HABIT}` : `🪜 ${cur}/${total}`}</span>
+          </div>
+        </div>
+        <div class="hmeta" style="margin-bottom:0">${streakTxt}</div>
+        <div class="steps-wrap">
+          <div class="steps-bar-row">
+            <div class="steps-track"><div class="steps-fill ${fillCls}" style="width:${pct}%"></div></div>
+            <div class="steps-counter ${cntCls}">${cur} / ${total}</div>
+          </div>
+          <div class="steps-btns">
+            <button class="step-btn" onclick="window._stepDown(event,${h.id})" ${cur<=0?'disabled':''} title="Step down">−</button>
+            <div class="steps-lbl">${done_s ? '✓ Complete' : `Step ${cur} of ${total}`}</div>
+            <button class="step-btn up" onclick="window._stepUp(event,${h.id})" ${done_s?'disabled':''} title="Step up">+</button>
+          </div>
+        </div>
+      </div>
+      <button class="hdel" onclick="window._del(event,${h.id})">✕</button>
+    </div>`;
+  }
+
+  // ── Regular habit ──
+  return `<div class="habit ${d?'done':''} ${h.temp?'temp-habit':''}" id="h${h.id}" onclick="window._tog(${h.id})">
+    <div class="hchk"></div>
+    <div class="hinfo">
+      <div class="hname">${esc(h.name)}</div>
+      <div class="hmeta">${streakTxt} ${tempBadge}</div>
+    </div>
+    <div class="hgem">${d?`✨+${GEMS_PER_HABIT}`:''}</div>
+    <button class="hdel" onclick="window._del(event,${h.id})">✕</button>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+//  TOGGLE COMPLETION  (5 gems per habit)
+// ══════════════════════════════════════════════════════
 window._tog = function(id) {
   const today = todayKey();
   if (!appData.completions[today]) appData.completions[today] = [];
@@ -689,25 +972,102 @@ window._tog = function(id) {
   if (idx === -1) {
     arr.push(id);
     const h = appData.habits.find(x=>x.id===id);
-    if (h) h.streak = (h.streak||0)+1;
-    appData.gems += 1; appData.totalEarned += 1;
+    if (h && !h.temp) h.streak = (h.streak||0)+1;  // streaks only for permanent habits
+    appData.gems        += GEMS_PER_HABIT;
+    appData.totalEarned += GEMS_PER_HABIT;
 
-    if (arr.length === appData.habits.length) {
-      appData.gems += 10; appData.totalEarned += 10;
-      toast('🎉 All habits done! Bonus +10 gems!');
+    if (arr.length === appData.habits.length && appData.habits.length > 0) {
+      appData.gems        += BONUS_ALL_DONE;
+      appData.totalEarned += BONUS_ALL_DONE;
+      toast(`🎉 All habits done! Bonus +${BONUS_ALL_DONE} gems!`);
       confetti();
     } else {
-      toast('+1 gems earned ✨');
+      toast(`+${GEMS_PER_HABIT} gems earned ✨`);
     }
     const el = document.getElementById(`h${id}`);
     if (el) { el.classList.add('pulse'); setTimeout(()=>el.classList.remove('pulse'),700); }
   } else {
     arr.splice(idx,1);
     const h = appData.habits.find(x=>x.id===id);
-    if (h&&h.streak>0) h.streak--;
-    appData.gems        = Math.max(0,appData.gems-1);
-    appData.totalEarned = Math.max(0,appData.totalEarned-1);
+    if (h && !h.temp && h.streak>0) h.streak--;
+    appData.gems        = Math.max(0, appData.gems - GEMS_PER_HABIT);
+    appData.totalEarned = Math.max(0, appData.totalEarned - GEMS_PER_HABIT);
   }
+  save(appData); render();
+};
+
+// ══════════════════════════════════════════════════════
+//  STEP UP / STEP DOWN
+// ══════════════════════════════════════════════════════
+window._stepUp = function(e, id) {
+  e.stopPropagation();
+  const today = todayKey();
+  const h = appData.habits.find(x => x.id === id);
+  if (!h || !h.steps) return;
+
+  const cur = h.stepProgress || 0;
+  if (cur >= h.steps) return;  // already complete
+
+  h.stepProgress = cur + 1;
+
+  // Animate the fill bar
+  const fill = document.querySelector(`#h${id} .steps-fill`);
+  if (fill) { fill.classList.remove('pop'); void fill.offsetWidth; fill.classList.add('pop'); }
+
+  // Auto-complete when final step reached
+  if (h.stepProgress >= h.steps) {
+    if (!appData.completions[today]) appData.completions[today] = [];
+    if (!appData.completions[today].includes(id)) {
+      appData.completions[today].push(id);
+      if (!h.temp) h.streak = (h.streak || 0) + 1;
+      appData.gems        += GEMS_PER_HABIT;
+      appData.totalEarned += GEMS_PER_HABIT;
+
+      if (appData.completions[today].length === appData.habits.length) {
+        appData.gems        += BONUS_ALL_DONE;
+        appData.totalEarned += BONUS_ALL_DONE;
+        toast(`🎉 All habits done! Bonus +${BONUS_ALL_DONE} gems!`);
+        confetti();
+      } else {
+        toast(`🪜 All ${h.steps} steps done! +${GEMS_PER_HABIT} gems ✨`);
+        confetti();
+      }
+    }
+  } else {
+    toast(`Step ${h.stepProgress} of ${h.steps} ✔`);
+  }
+
+  save(appData); render();
+};
+
+window._stepDown = function(e, id) {
+  e.stopPropagation();
+  const today = todayKey();
+  const h = appData.habits.find(x => x.id === id);
+  if (!h || !h.steps) return;
+
+  const cur = h.stepProgress || 0;
+  if (cur <= 0) return;
+
+  const wasComplete = cur >= h.steps;
+  h.stepProgress = cur - 1;
+
+  // If it was complete and we're stepping back, un-complete
+  if (wasComplete) {
+    if (appData.completions[today]) {
+      const idx = appData.completions[today].indexOf(id);
+      if (idx !== -1) {
+        appData.completions[today].splice(idx, 1);
+        if (!h.temp && h.streak > 0) h.streak--;
+        appData.gems        = Math.max(0, appData.gems - GEMS_PER_HABIT);
+        appData.totalEarned = Math.max(0, appData.totalEarned - GEMS_PER_HABIT);
+      }
+    }
+    toast(`Step back to ${h.stepProgress} of ${h.steps}`);
+  } else {
+    toast(`Step ${h.stepProgress} of ${h.steps}`);
+  }
+
   save(appData); render();
 };
 
@@ -722,18 +1082,71 @@ window._del = function(e, id) {
 window.toggleForm = function() {
   const f = document.getElementById('addForm');
   f.classList.toggle('open');
-  if (f.classList.contains('open')) document.getElementById('hInput').focus();
+  if (f.classList.contains('open')) {
+    // Reset all toggle states each time form opens
+    isTempMode  = false;
+    isStepsMode = false;
+    document.getElementById('pillSwitch').classList.remove('on');
+    document.getElementById('tempToggleRow').classList.remove('active');
+    document.getElementById('pillSwitchSteps').classList.remove('on');
+    document.getElementById('stepsToggleRow').style.borderColor = 'var(--border)';
+    document.getElementById('stepsToggleRow').style.background  = '';
+    document.getElementById('stepsToggleTitle').style.color     = '';
+    document.getElementById('stepsCountWrap').style.display     = 'none';
+    document.getElementById('stepsInput').value = '';
+    document.getElementById('hInput').focus();
+  }
 };
 
 window.addHabit = function() {
   const inp = document.getElementById('hInput');
   const nm  = inp.value.trim();
   if (!nm) return;
-  appData.habits.push({ id: appData.nextId++, name: nm, streak: 0 });
+
+  // Validate steps input if steps mode on
+  let stepsCount = 0;
+  if (isStepsMode) {
+    stepsCount = parseInt(document.getElementById('stepsInput').value, 10);
+    if (!stepsCount || stepsCount < 2) {
+      document.getElementById('stepsInput').style.borderColor = 'var(--danger)';
+      setTimeout(() => document.getElementById('stepsInput').style.borderColor = '', 1200);
+      toast('Enter at least 2 steps'); return;
+    }
+    if (stepsCount > 100) { toast('Max 100 steps'); return; }
+  }
+
+  const newHabit = {
+    id:           appData.nextId++,
+    name:         nm,
+    streak:       0,
+    temp:         isTempMode,
+    createdDate:  todayKey(),
+    steps:        isStepsMode ? stepsCount : 0,
+    stepProgress: 0
+  };
+
+  appData.habits.push(newHabit);
   inp.value = '';
+  isStepsMode = false;
+  isTempMode  = false;
+  document.getElementById('pillSwitch').classList.remove('on');
+  document.getElementById('tempToggleRow').classList.remove('active');
+  document.getElementById('pillSwitchSteps').classList.remove('on');
+  document.getElementById('stepsToggleRow').style.borderColor = 'var(--border)';
+  document.getElementById('stepsToggleRow').style.background  = '';
+  document.getElementById('stepsToggleTitle').style.color     = '';
+  document.getElementById('stepsCountWrap').style.display     = 'none';
+  document.getElementById('stepsInput').value = '';
   document.getElementById('addForm').classList.remove('open');
+
   save(appData); renderHabits(); renderProgress();
-  toast('Habit added!');
+  if (newHabit.steps > 0) {
+    toast(`🪜 Habit added with ${newHabit.steps} steps!`);
+  } else if (newHabit.temp) {
+    toast('⏳ Temporary task added — gone tomorrow!');
+  } else {
+    toast('Habit added!');
+  }
 };
 
 // ══════════════════════════════════════════════════════
@@ -765,7 +1178,8 @@ function renderGraph() {
     const tot = appData.habits.length||1;
     labels.push(`${d.getDate()}/${d.getMonth()+1}`);
     pcts.push(Math.round(c.length/tot*100));
-    gems.push(c.length*2+(c.length===appData.habits.length&&appData.habits.length>0?10:0));
+    // Gems = 5 per completion + bonus
+    gems.push(c.length * GEMS_PER_HABIT + (c.length===appData.habits.length&&appData.habits.length>0 ? BONUS_ALL_DONE : 0));
   }
 
   const dpr  = window.devicePixelRatio||1;
@@ -824,8 +1238,8 @@ function renderGems() {
   document.getElementById('gemBal').textContent = appData.gems;
   document.getElementById('dGems').textContent  = appData.gems;
   const t=todayKey(), c=appData.completions[t]||[];
-  const bonus=c.length===appData.habits.length&&appData.habits.length>0?10:0;
-  document.getElementById('dToday').textContent  = `${c.length*2+bonus} ✨`;
+  const bonus=c.length===appData.habits.length&&appData.habits.length>0 ? BONUS_ALL_DONE : 0;
+  document.getElementById('dToday').textContent  = `${c.length * GEMS_PER_HABIT + bonus} ✨`;
   document.getElementById('dTotal').textContent  = `${appData.totalEarned||0} ✨`;
   document.getElementById('dRedeem').textContent = `${appData.totalRedeemed||0} ✨`;
   const best=Math.max(...appData.habits.map(h=>h.streak||0),0);

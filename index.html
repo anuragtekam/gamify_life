@@ -14,6 +14,7 @@
     --text: #e8e4dc; --muted: #7a7870; --danger: #e07060;
     --success: #6daf80; --reward: #b87fbf;
     --temp: #5a9ec8; --temp-bg: #1a2535;
+    --sched: #e8875a; --sched-bg: #251a12;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; overflow-x: hidden; }
@@ -210,6 +211,96 @@
   }
   @keyframes stepPop { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
   .steps-fill.pop { animation: stepPop 0.3s ease-out; }
+
+  /* ── SCHEDULED / EVENT TASK ── */
+
+  .habit-section-label.sched-lbl  { color: var(--sched); }
+  .habit-section-label.sched-lbl::after { background: rgba(232,135,90,0.2); }
+
+  .habit.sched-habit {
+    border-color: rgba(232,135,90,0.25); background: var(--sched-bg);
+    cursor: pointer;
+  }
+  .habit.sched-habit::before  { background: var(--sched); }
+  .habit.sched-habit:hover    { border-color: rgba(232,135,90,0.5); }
+  .habit.sched-habit.done     { border-color: rgba(109,175,128,0.35); background: #141a16; }
+  .habit.sched-habit.inactive {
+    opacity: 0.45; cursor: default; pointer-events: none;
+    border-color: rgba(232,135,90,0.1); background: #1a1510;
+  }
+  .habit.sched-habit.inactive:hover { transform: none; border-color: rgba(232,135,90,0.1); }
+
+  .sched-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: rgba(232,135,90,0.15); border: 1px solid rgba(232,135,90,0.35);
+    color: var(--sched); font-size: 0.52rem; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 2px 6px; border-radius: 999px; flex-shrink: 0;
+  }
+  .sched-badge.inactive-badge {
+    background: rgba(122,120,112,0.1); border-color: rgba(122,120,112,0.2);
+    color: var(--muted);
+  }
+
+  /* Countdown chip shown on inactive scheduled tasks */
+  .sched-next {
+    font-size: 0.58rem; color: var(--muted); margin-top: 4px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .sched-next-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--sched); opacity: 0.5; flex-shrink:0; }
+
+  /* Event info strip */
+  .sched-info-strip {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(232,135,90,0.15);
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .sched-chip {
+    font-size: 0.55rem; color: var(--sched); letter-spacing: 0.08em; text-transform: uppercase;
+    background: rgba(232,135,90,0.08); border: 1px solid rgba(232,135,90,0.2);
+    padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .sched-chip.muted { color: var(--muted); background: rgba(255,255,255,0.03); border-color: var(--border); }
+
+  /* Scheduled form panel */
+  .sched-form-panel {
+    display: none; background: rgba(232,135,90,0.04); border: 1px solid rgba(232,135,90,0.2);
+    border-radius: 8px; padding: 14px; margin-bottom: 12px;
+  }
+  .sched-form-panel.open { display: block; }
+  .sched-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .sched-row label { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-bottom: 5px; }
+  .sched-row .sfield { flex: 1; min-width: 120px; }
+  .sfield input, .sfield select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 0.78rem; padding: 8px 10px;
+    border-radius: 6px; outline: none; transition: border-color 0.2s;
+  }
+  .sfield input:focus, .sfield select:focus { border-color: var(--sched); }
+  .sfield select option { background: var(--bg); }
+
+  /* Day-of-week picker */
+  .dow-picker { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+  .dow-btn {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+    font-family: 'DM Mono', monospace; font-size: 0.6rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.18s;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .dow-btn:hover { border-color: var(--sched); color: var(--sched); }
+  .dow-btn.sel   { background: rgba(232,135,90,0.18); border-color: var(--sched); color: var(--sched); }
+
+  /* Date-of-month picker */
+  .dom-picker {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 4px;
+  }
+  .dom-btn {
+    height: 28px; border-radius: 5px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--muted); font-family: 'DM Mono', monospace;
+    font-size: 0.6rem; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all 0.15s;
+  }
+  .dom-btn:hover { border-color: var(--sched); color: var(--sched); }
+  .dom-btn.sel   { background: rgba(232,135,90,0.18); border-color: var(--sched); color: var(--sched); }
 
   /* ADD FORM */
   .add-form{ display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:10px; }
@@ -448,6 +539,64 @@
           style="margin-bottom:0" onkeydown="if(event.key==='Enter')addHabit()">
       </div>
 
+      <!-- Scheduled Event toggle -->
+      <div class="temp-toggle-row" id="schedToggleRow" onclick="toggleSchedSwitch()" style="border-color:var(--border)">
+        <div class="temp-toggle-left">
+          <div class="temp-icon">📅</div>
+          <div class="temp-toggle-info">
+            <div class="temp-toggle-title" id="schedToggleTitle">Scheduled Event</div>
+            <div class="temp-toggle-desc">Weekly or monthly — active only on set days</div>
+          </div>
+        </div>
+        <div class="pill-switch" id="pillSwitchSched"></div>
+      </div>
+
+      <!-- Scheduled config panel -->
+      <div class="sched-form-panel" id="schedFormPanel">
+        <!-- Frequency: weekly / monthly -->
+        <div class="sched-row">
+          <div class="sfield">
+            <label>Frequency</label>
+            <select id="schedFreq" onchange="onSchedFreqChange()">
+              <option value="weekly">Weekly — specific days of the week</option>
+              <option value="monthly">Monthly — specific dates of the month</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Weekly: day-of-week picker -->
+        <div id="dowWrap">
+          <label style="font-size:0.58rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;">Active Days</label>
+          <div class="dow-picker" id="dowPicker">
+            <button type="button" class="dow-btn" data-d="0" onclick="toggleDow(this)">Su</button>
+            <button type="button" class="dow-btn" data-d="1" onclick="toggleDow(this)">Mo</button>
+            <button type="button" class="dow-btn" data-d="2" onclick="toggleDow(this)">Tu</button>
+            <button type="button" class="dow-btn" data-d="3" onclick="toggleDow(this)">We</button>
+            <button type="button" class="dow-btn" data-d="4" onclick="toggleDow(this)">Th</button>
+            <button type="button" class="dow-btn" data-d="5" onclick="toggleDow(this)">Fr</button>
+            <button type="button" class="dow-btn" data-d="6" onclick="toggleDow(this)">Sa</button>
+          </div>
+        </div>
+
+        <!-- Monthly: date-of-month picker -->
+        <div id="domWrap" style="display:none;">
+          <label style="font-size:0.58rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;">Active Dates</label>
+          <div class="dom-picker" id="domPicker"></div>
+        </div>
+
+        <!-- Date range -->
+        <div class="sched-row" style="margin-top:12px;margin-bottom:0">
+          <div class="sfield">
+            <label>Start Date</label>
+            <input type="date" id="schedStart">
+          </div>
+          <div class="sfield">
+            <label>End Date</label>
+            <input type="date" id="schedEnd">
+          </div>
+        </div>
+      </div>
+
       <div class="form-btns">
         <button class="btn-p" onclick="addHabit()">Add</button>
         <button class="btn-g" onclick="toggleForm()">Cancel</button>
@@ -543,6 +692,7 @@ let selCost   = null;
 let saveTimer = null;
 let isTempMode  = false;  // current form toggle state
 let isStepsMode = false;  // steps toggle state in form
+let isSchedMode = false;  // scheduled event toggle state in form
 
 function blank() {
   return {
@@ -871,14 +1021,141 @@ window.toggleStepsSwitch = function() {
 };
 
 // ══════════════════════════════════════════════════════
-//  HABITS RENDER
+//  SCHEDULED EVENT TOGGLE + HELPERS
 // ══════════════════════════════════════════════════════
+window.toggleSchedSwitch = function() {
+  isSchedMode = !isSchedMode;
+  const sw    = document.getElementById('pillSwitchSched');
+  const row   = document.getElementById('schedToggleRow');
+  const panel = document.getElementById('schedFormPanel');
+  const ttl   = document.getElementById('schedToggleTitle');
+  sw.classList.toggle('on', isSchedMode);
+  row.style.borderColor = isSchedMode ? 'rgba(232,135,90,0.5)' : 'var(--border)';
+  row.style.background  = isSchedMode ? 'rgba(37,26,18,0.7)'   : '';
+  ttl.style.color       = isSchedMode ? 'var(--sched)'         : '';
+  panel.classList.toggle('open', isSchedMode);
+
+  if (isSchedMode) {
+    // Populate DOM picker on first open
+    if (!document.getElementById('domPicker').children.length) buildDomPicker();
+    // Default start = today
+    const td = new Date();
+    document.getElementById('schedStart').value = fmtDateInput(td);
+    // Default end = 1 month out
+    const te = new Date(td); te.setMonth(te.getMonth()+1);
+    document.getElementById('schedEnd').value = fmtDateInput(te);
+  }
+  // If sched enabled, disable temp (mutually exclusive)
+  if (isSchedMode && isTempMode) {
+    isTempMode = false;
+    document.getElementById('pillSwitch').classList.remove('on');
+    document.getElementById('tempToggleRow').classList.remove('active');
+  }
+};
+
+window.onSchedFreqChange = function() {
+  const freq = document.getElementById('schedFreq').value;
+  document.getElementById('dowWrap').style.display  = freq === 'weekly'  ? 'block' : 'none';
+  document.getElementById('domWrap').style.display  = freq === 'monthly' ? 'block' : 'none';
+};
+
+window.toggleDow = function(btn) { btn.classList.toggle('sel'); };
+
+function buildDomPicker() {
+  const wrap = document.getElementById('domPicker');
+  wrap.innerHTML = '';
+  for (let d = 1; d <= 31; d++) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'dom-btn';
+    b.textContent = d; b.dataset.d = d;
+    b.onclick = () => b.classList.toggle('sel');
+    wrap.appendChild(b);
+  }
+}
+
+function fmtDateInput(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Returns true if a scheduled habit should be active today
+function isSchedActive(h) {
+  const now    = new Date();
+  const today  = fmtDateInput(now);
+  if (h.schedStart && today < h.schedStart) return false;
+  if (h.schedEnd   && today > h.schedEnd)   return false;
+
+  if (h.schedFreq === 'weekly') {
+    return (h.schedDays || []).includes(now.getDay());
+  }
+  if (h.schedFreq === 'monthly') {
+    return (h.schedDates || []).includes(now.getDate());
+  }
+  return true;
+}
+
+// Human-readable "next active" hint for inactive scheduled habits
+function nextActiveHint(h) {
+  const now = new Date();
+  if (h.schedEnd && fmtDateInput(now) > h.schedEnd) return 'Event has ended';
+
+  if (h.schedFreq === 'weekly') {
+    const days = h.schedDays || [];
+    if (!days.length) return 'No days selected';
+    const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    // Find next occurrence within 7 days
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(now); d.setDate(d.getDate() + i);
+      if (days.includes(d.getDay())) {
+        const diff = i === 1 ? 'tomorrow' : `in ${i} days (${names[d.getDay()]})`;
+        return `Next: ${diff}`;
+      }
+    }
+  }
+  if (h.schedFreq === 'monthly') {
+    const dates = h.schedDates || [];
+    if (!dates.length) return 'No dates selected';
+    const curDay = now.getDate();
+    // Find next date this month
+    const later = dates.filter(d => d > curDay).sort((a,b)=>a-b);
+    if (later.length) return `Next: ${later[0]}${ordinal(later[0])} this month`;
+    // Otherwise first date next month
+    const first = [...dates].sort((a,b)=>a-b)[0];
+    return `Next: ${first}${ordinal(first)} next month`;
+  }
+  return '';
+}
+
+function ordinal(n) {
+  const s = ['th','st','nd','rd'], v = n%100;
+  return s[(v-20)%10] || s[v] || s[0];
+}
+
+// Friendly schedule summary for the card chips
+function schedSummary(h) {
+  const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const mons  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let days = '';
+  if (h.schedFreq === 'weekly') {
+    days = (h.schedDays||[]).map(d=>names[d]).join(' · ') || 'No days';
+  } else {
+    days = (h.schedDates||[]).sort((a,b)=>a-b).join(', ') || 'No dates';
+  }
+  const startD = h.schedStart ? new Date(h.schedStart+'T00:00:00') : null;
+  const endD   = h.schedEnd   ? new Date(h.schedEnd+'T00:00:00')   : null;
+  const range  = startD && endD
+    ? `${startD.getDate()} ${mons[startD.getMonth()]} → ${endD.getDate()} ${mons[endD.getMonth()]} ${endD.getFullYear()}`
+    : '';
+  return { days, range, freq: h.schedFreq === 'weekly' ? 'Weekly' : 'Monthly' };
+}
+
+
 function renderHabits() {
   const today = todayKey();
   const done  = appData.completions[today] || [];
   const el    = document.getElementById('habitList');
 
-  const permanent = appData.habits.filter(h => !h.temp);
+  const permanent = appData.habits.filter(h => !h.temp && !h.sched);
+  const scheduled = appData.habits.filter(h =>  h.sched);
   const temporary = appData.habits.filter(h =>  h.temp);
 
   if (!appData.habits.length) {
@@ -888,13 +1165,16 @@ function renderHabits() {
 
   let html = '';
 
-  // ── Permanent section ──
   if (permanent.length) {
     html += `<div class="habit-section-label">📌 Permanent</div>`;
     html += permanent.map(h => habitHTML(h, done)).join('');
   }
 
-  // ── Temporary section ──
+  if (scheduled.length) {
+    html += `<div class="habit-section-label sched-lbl">📅 Scheduled Events</div>`;
+    html += scheduled.map(h => habitHTML(h, done)).join('');
+  }
+
   if (temporary.length) {
     html += `<div class="habit-section-label temp-lbl">⏳ Today Only</div>`;
     html += temporary.map(h => habitHTML(h, done)).join('');
@@ -905,22 +1185,67 @@ function renderHabits() {
 
 function habitHTML(h, done) {
   const d = done.includes(h.id);
-  const tempBadge = h.temp
-    ? `<span class="temp-badge">⏳ today</span>`
-    : '';
+
+  // ── SCHEDULED HABIT ──
+  if (h.sched) {
+    const active = isSchedActive(h);
+    const sum    = schedSummary(h);
+    const badge  = active
+      ? `<span class="sched-badge">📅 active today</span>`
+      : `<span class="sched-badge inactive-badge">⏸ not today</span>`;
+    const hint   = !active ? `<div class="sched-next"><span class="sched-next-dot"></span>${nextActiveHint(h)}</div>` : '';
+
+    // Steps on scheduled task
+    let stepsBlock = '';
+    if (h.steps && h.steps > 0 && active) {
+      const cur = h.stepProgress || 0, total = h.steps;
+      const pct = Math.round(cur/total*100), done_s = cur >= total;
+      stepsBlock = `
+        <div class="steps-wrap" style="border-top-color:rgba(232,135,90,0.15)">
+          <div class="steps-bar-row">
+            <div class="steps-track"><div class="steps-fill ${done_s?'complete':''}" style="width:${pct}%;background:${done_s?'':'linear-gradient(90deg,var(--sched),#f0a070)'}"></div></div>
+            <div class="steps-counter ${done_s?'complete':''}" style="color:${done_s?'var(--success)':'var(--sched)'}">${cur} / ${total}</div>
+          </div>
+          <div class="steps-btns">
+            <button class="step-btn" onclick="window._stepDown(event,${h.id})" ${cur<=0?'disabled':''}>−</button>
+            <div class="steps-lbl">${done_s?'✓ Complete':`Step ${cur} of ${total}`}</div>
+            <button class="step-btn up" onclick="window._stepUp(event,${h.id})" ${done_s?'disabled':''} style="border-color:var(--sched);color:var(--sched)">+</button>
+          </div>
+        </div>`;
+    }
+
+    return `<div class="habit sched-habit ${d?'done':''} ${!active?'inactive':''} has-steps" id="h${h.id}"
+        onclick="${active&&!h.steps?`window._tog(${h.id})`:''}" style="${active&&!h.steps?'cursor:pointer':'cursor:default'}">
+      <div class="hchk"></div>
+      <div class="hinfo" style="width:100%">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap">
+          <div class="hname" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%">${esc(h.name)}</div>
+          <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+            ${badge}
+            <span class="hgem" style="font-size:0.62rem">${d?`✨+${GEMS_PER_HABIT}`:''}</span>
+          </div>
+        </div>
+        ${hint}
+        <div class="sched-info-strip">
+          <span class="sched-chip">${sum.freq}</span>
+          <span class="sched-chip">${sum.days}</span>
+          ${sum.range ? `<span class="sched-chip muted">${sum.range}</span>` : ''}
+        </div>
+        ${stepsBlock}
+      </div>
+      <button class="hdel" onclick="window._del(event,${h.id})">✕</button>
+    </div>`;
+  }
+
+  const tempBadge = h.temp ? `<span class="temp-badge">⏳ today</span>` : '';
   const streakTxt = h.streak > 0
     ? `🔥 ${h.streak} day streak`
     : (h.temp ? 'One-time task' : 'Start your streak today');
 
-  // ── Steps habit ──
+  // ── Steps habit (non-scheduled) ──
   if (h.steps && h.steps > 0) {
-    const cur     = h.stepProgress || 0;
-    const total   = h.steps;
-    const pct     = Math.round(cur / total * 100);
-    const done_s  = cur >= total;
-    const fillCls = done_s ? 'complete' : '';
-    const cntCls  = done_s ? 'complete' : '';
-
+    const cur = h.stepProgress || 0, total = h.steps;
+    const pct = Math.round(cur/total*100), done_s = cur >= total;
     return `<div class="habit has-steps ${done_s?'done':''} ${h.temp?'temp-habit':''}" id="h${h.id}">
       <div class="hchk"></div>
       <div class="hinfo" style="width:100%">
@@ -928,19 +1253,19 @@ function habitHTML(h, done) {
           <div class="hname" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%">${esc(h.name)}</div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             ${tempBadge}
-            <span class="hgem" style="font-size:0.62rem">${done_s ? `✨+${GEMS_PER_HABIT}` : `🪜 ${cur}/${total}`}</span>
+            <span class="hgem" style="font-size:0.62rem">${done_s?`✨+${GEMS_PER_HABIT}`:`🪜 ${cur}/${total}`}</span>
           </div>
         </div>
         <div class="hmeta" style="margin-bottom:0">${streakTxt}</div>
         <div class="steps-wrap">
           <div class="steps-bar-row">
-            <div class="steps-track"><div class="steps-fill ${fillCls}" style="width:${pct}%"></div></div>
-            <div class="steps-counter ${cntCls}">${cur} / ${total}</div>
+            <div class="steps-track"><div class="steps-fill ${done_s?'complete':''}" style="width:${pct}%"></div></div>
+            <div class="steps-counter ${done_s?'complete':''}">${cur} / ${total}</div>
           </div>
           <div class="steps-btns">
-            <button class="step-btn" onclick="window._stepDown(event,${h.id})" ${cur<=0?'disabled':''} title="Step down">−</button>
-            <div class="steps-lbl">${done_s ? '✓ Complete' : `Step ${cur} of ${total}`}</div>
-            <button class="step-btn up" onclick="window._stepUp(event,${h.id})" ${done_s?'disabled':''} title="Step up">+</button>
+            <button class="step-btn" onclick="window._stepDown(event,${h.id})" ${cur<=0?'disabled':''}>−</button>
+            <div class="steps-lbl">${done_s?'✓ Complete':`Step ${cur} of ${total}`}</div>
+            <button class="step-btn up" onclick="window._stepUp(event,${h.id})" ${done_s?'disabled':''}>+</button>
           </div>
         </div>
       </div>
@@ -959,6 +1284,7 @@ function habitHTML(h, done) {
     <button class="hdel" onclick="window._del(event,${h.id})">✕</button>
   </div>`;
 }
+
 
 // ══════════════════════════════════════════════════════
 //  TOGGLE COMPLETION  (5 gems per habit)
@@ -1083,9 +1409,9 @@ window.toggleForm = function() {
   const f = document.getElementById('addForm');
   f.classList.toggle('open');
   if (f.classList.contains('open')) {
-    // Reset all toggle states each time form opens
     isTempMode  = false;
     isStepsMode = false;
+    isSchedMode = false;
     document.getElementById('pillSwitch').classList.remove('on');
     document.getElementById('tempToggleRow').classList.remove('active');
     document.getElementById('pillSwitchSteps').classList.remove('on');
@@ -1094,6 +1420,14 @@ window.toggleForm = function() {
     document.getElementById('stepsToggleTitle').style.color     = '';
     document.getElementById('stepsCountWrap').style.display     = 'none';
     document.getElementById('stepsInput').value = '';
+    // reset sched
+    document.getElementById('pillSwitchSched').classList.remove('on');
+    document.getElementById('schedToggleRow').style.borderColor = 'var(--border)';
+    document.getElementById('schedToggleRow').style.background  = '';
+    document.getElementById('schedToggleTitle').style.color     = '';
+    document.getElementById('schedFormPanel').classList.remove('open');
+    document.querySelectorAll('.dow-btn').forEach(b => b.classList.remove('sel'));
+    document.querySelectorAll('.dom-btn').forEach(b => b.classList.remove('sel'));
     document.getElementById('hInput').focus();
   }
 };
@@ -1103,7 +1437,7 @@ window.addHabit = function() {
   const nm  = inp.value.trim();
   if (!nm) return;
 
-  // Validate steps input if steps mode on
+  // Validate steps
   let stepsCount = 0;
   if (isStepsMode) {
     stepsCount = parseInt(document.getElementById('stepsInput').value, 10);
@@ -1115,20 +1449,45 @@ window.addHabit = function() {
     if (stepsCount > 100) { toast('Max 100 steps'); return; }
   }
 
+  // Validate scheduled
+  let schedFields = {};
+  if (isSchedMode) {
+    const freq  = document.getElementById('schedFreq').value;
+    const start = document.getElementById('schedStart').value;
+    const end   = document.getElementById('schedEnd').value;
+
+    if (!start || !end) { toast('Set a start and end date'); return; }
+    if (end < start)    { toast('End date must be after start'); return; }
+
+    let days = [], dates = [];
+    if (freq === 'weekly') {
+      days = [...document.querySelectorAll('.dow-btn.sel')].map(b => Number(b.dataset.d));
+      if (!days.length) { toast('Select at least one day of the week'); return; }
+    } else {
+      dates = [...document.querySelectorAll('.dom-btn.sel')].map(b => Number(b.dataset.d));
+      if (!dates.length) { toast('Select at least one date of the month'); return; }
+    }
+    schedFields = { sched: true, schedFreq: freq, schedStart: start, schedEnd: end, schedDays: days, schedDates: dates };
+  }
+
   const newHabit = {
     id:           appData.nextId++,
     name:         nm,
     streak:       0,
-    temp:         isTempMode,
+    temp:         isSchedMode ? false : isTempMode,
     createdDate:  todayKey(),
     steps:        isStepsMode ? stepsCount : 0,
-    stepProgress: 0
+    stepProgress: 0,
+    ...schedFields
   };
 
   appData.habits.push(newHabit);
-  inp.value = '';
-  isStepsMode = false;
+  inp.value   = '';
   isTempMode  = false;
+  isStepsMode = false;
+  isSchedMode = false;
+
+  // Reset all form controls
   document.getElementById('pillSwitch').classList.remove('on');
   document.getElementById('tempToggleRow').classList.remove('active');
   document.getElementById('pillSwitchSteps').classList.remove('on');
@@ -1137,10 +1496,21 @@ window.addHabit = function() {
   document.getElementById('stepsToggleTitle').style.color     = '';
   document.getElementById('stepsCountWrap').style.display     = 'none';
   document.getElementById('stepsInput').value = '';
+  document.getElementById('pillSwitchSched').classList.remove('on');
+  document.getElementById('schedToggleRow').style.borderColor = 'var(--border)';
+  document.getElementById('schedToggleRow').style.background  = '';
+  document.getElementById('schedToggleTitle').style.color     = '';
+  document.getElementById('schedFormPanel').classList.remove('open');
+  document.querySelectorAll('.dow-btn').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('.dom-btn').forEach(b => b.classList.remove('sel'));
   document.getElementById('addForm').classList.remove('open');
 
   save(appData); renderHabits(); renderProgress();
-  if (newHabit.steps > 0) {
+
+  if (newHabit.sched) {
+    const freq = newHabit.schedFreq === 'weekly' ? 'weekly' : 'monthly';
+    toast(`📅 Scheduled ${freq} event added!`);
+  } else if (newHabit.steps > 0) {
     toast(`🪜 Habit added with ${newHabit.steps} steps!`);
   } else if (newHabit.temp) {
     toast('⏳ Temporary task added — gone tomorrow!');
@@ -1154,8 +1524,10 @@ window.addHabit = function() {
 // ══════════════════════════════════════════════════════
 function renderProgress() {
   const t   = todayKey();
-  const c   = (appData.completions[t]||[]).length;
-  const tot = appData.habits.length;
+  // Only count habits that are either non-scheduled, or scheduled and active today
+  const active = appData.habits.filter(h => !h.sched || isSchedActive(h));
+  const c   = (appData.completions[t]||[]).filter(id => active.some(h => h.id === id)).length;
+  const tot = active.length;
   const pct = tot ? Math.round(c/tot*100) : 0;
   document.getElementById('progFill').style.width = pct+'%';
   document.getElementById('progTxt').textContent  = `${c} / ${tot} habits completed`;

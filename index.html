@@ -104,6 +104,44 @@
   .uname{ font-size:0.8rem;color:var(--text);line-height:1.2; }
   .uhandle{ font-size:0.6rem;color:var(--muted); }
 
+  /* REFRESH BUTTON */
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .refresh-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(200,169,110,0.06);
+  }
+  .refresh-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .refresh-btn svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    transition: transform 0.5s ease;
+  }
+  .refresh-btn.spinning svg {
+    animation: spinIcon 0.8s linear infinite;
+  }
+  @keyframes spinIcon { to { transform: rotate(360deg); } }
+
   /* REWARD BAR */
   .rew-bar{ background:linear-gradient(135deg,#1e1825,#1a1520);border:1px solid #3a2a45;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;cursor:pointer;transition:all 0.2s; }
   .rew-bar:hover{ border-color:var(--reward);transform:translateY(-1px);box-shadow:0 4px 20px rgba(184,127,191,.15); }
@@ -468,6 +506,14 @@
         <div class="dy" id="dayName"></div>
         <div class="dt" id="fullDate"></div>
       </div>
+      <!-- REFRESH BUTTON -->
+      <button class="refresh-btn" id="refreshBtn" onclick="doRefresh()" title="Sync latest data from cloud">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.5 8A5.5 5.5 0 1 1 10 3.07"/>
+          <polyline points="10 1 10 4 13 4"/>
+        </svg>
+        Refresh
+      </button>
       <div class="ubadge" onclick="doSwitch()" title="Switch user">
         <div class="uav" id="uAvatar">?</div>
         <div>
@@ -678,8 +724,8 @@ const db    = getFirestore(fbApp);
 // ══════════════════════════════════════════════════════
 //  CONSTANTS
 // ══════════════════════════════════════════════════════
-const GEMS_PER_HABIT  = 5;   // ← Changed from 1 to 5
-const BONUS_ALL_DONE  = 10;  // bonus gems for completing all habits
+const GEMS_PER_HABIT  = 5;
+const BONUS_ALL_DONE  = 10;
 const SESSION_KEY     = 'ritual_session';
 const CACHE_PFX       = 'ritual_cache_';
 
@@ -690,9 +736,9 @@ let appData   = null;
 let curUser   = null;
 let selCost   = null;
 let saveTimer = null;
-let isTempMode  = false;  // current form toggle state
-let isStepsMode = false;  // steps toggle state in form
-let isSchedMode = false;  // scheduled event toggle state in form
+let isTempMode  = false;
+let isStepsMode = false;
+let isSchedMode = false;
 
 function blank() {
   return {
@@ -709,23 +755,20 @@ function blank() {
 
 // ══════════════════════════════════════════════════════
 //  TEMPORARY TASK CLEANUP
-//  Runs on boot: removes temp habits that were created
-//  on a previous day (i.e., createdDate !== today).
 // ══════════════════════════════════════════════════════
 function purgeStaleTempHabits(data) {
   const today = todayKey();
   const before = data.habits.length;
   data.habits = data.habits.filter(h => {
-    if (!h.temp) return true;                  // permanent → keep
-    return h.createdDate === today;            // temp → keep only if created today
+    if (!h.temp) return true;
+    return h.createdDate === today;
   });
-  return data.habits.length < before;          // returns true if any were removed
+  return data.habits.length < before;
 }
 
-// Reset stepProgress for step-habits each new day
 function resetStaleStepProgress(data) {
   const today = todayKey();
-  if (data._stepResetDate === today) return false; // already reset today
+  if (data._stepResetDate === today) return false;
   data.habits.forEach(h => {
     if (h.steps && h.steps > 0) h.stepProgress = 0;
   });
@@ -746,10 +789,8 @@ function sync(state, msg) {
 }
 
 // ══════════════════════════════════════════════════════
-//  FIRESTORE HELPERS  — timeout-safe, never hangs
+//  FIRESTORE HELPERS
 // ══════════════════════════════════════════════════════
-
-// Race any promise against a ms timeout; returns null on timeout or error
 function withTimeout(p, ms) {
   return Promise.race([
     p,
@@ -775,14 +816,12 @@ async function fsCreate(username, name) {
   return initial;
 }
 
-// Push to Firestore, strip _dirty flag on success
 async function fsPushClean(username, d) {
   try {
     sync('syncing', '↑ Saving…');
     const clean = JSON.parse(JSON.stringify(d));
     delete clean._dirty;
 
-    // Wrap updateDoc so we can distinguish "resolved" from "timed out"
     let succeeded = false;
     await withTimeout(
       updateDoc(doc(db, 'users', username), { data: clean, updatedAt: serverTimestamp() })
@@ -823,7 +862,6 @@ function getCache(username) {
   try { return JSON.parse(localStorage.getItem(CACHE_PFX + username)); } catch(e) { return null; }
 }
 
-// Remote wins unless local has dirty (unsaved) writes with equal/higher gem count
 function resolveData(remote, cache) {
   if (!cache) return { data: remote, pushNeeded: false };
   if (cache._dirty) {
@@ -842,6 +880,45 @@ function save(d) {
 }
 
 // ══════════════════════════════════════════════════════
+//  REFRESH — pulls fresh data from Firestore
+// ══════════════════════════════════════════════════════
+window.doRefresh = async function() {
+  if (!curUser) return;
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.classList.add('spinning');
+
+  try {
+    const remote = await fsGet(curUser.username);
+    if (remote?.data) {
+      // If we have unsaved local changes with higher gems, keep local; otherwise take remote
+      const cache = getCache(curUser.username);
+      const { data, pushNeeded } = resolveData(remote.data, cache?._dirty ? cache : null);
+      appData = data;
+      if (pushNeeded) {
+        fsPushClean(curUser.username, appData);
+      } else {
+        localStorage.setItem(CACHE_PFX + curUser.username, JSON.stringify(data));
+        sync('ok', '✓ Up to date');
+      }
+      purgeStaleTempHabits(appData);
+      resetStaleStepProgress(appData);
+      render();
+      toast('✓ Refreshed from cloud');
+    } else {
+      toast('⚠ Could not reach server — showing cached data');
+      sync('err', '⚠ Offline');
+    }
+  } catch(e) {
+    toast('⚠ Refresh failed');
+    sync('err', '⚠ Error');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('spinning');
+  }
+};
+
+// ══════════════════════════════════════════════════════
 //  SPLASH
 // ══════════════════════════════════════════════════════
 function splashTxt(t) { document.getElementById('splashMsg').textContent = t; }
@@ -852,10 +929,9 @@ function hideSplash() {
 }
 
 // ══════════════════════════════════════════════════════
-//  BOOT — always escapes the splash screen no matter what
+//  BOOT
 // ══════════════════════════════════════════════════════
 async function boot() {
-  // Absolute safety net: if anything hangs past 10 s, go to login
   const escapeHatch = setTimeout(() => {
     console.warn('Boot timeout — forcing login screen');
     hideSplash(); showLoginScreen();
@@ -873,7 +949,7 @@ async function boot() {
     if (session?.username) {
       splashTxt(`Loading ${session.name}'s data…`);
 
-      const remote = await fsGet(session.username);  // 7 s timeout inside
+      const remote = await fsGet(session.username);
 
       if (remote?.data) {
         curUser = { username: session.username, name: remote.name };
@@ -885,7 +961,6 @@ async function boot() {
         done(); hideSplash(); enterApp(); return;
       }
 
-      // Firebase unavailable or doc has no data — fall back to local cache
       const cache = getCache(session.username);
       if (cache) {
         curUser = { username: session.username, name: session.name };
@@ -893,7 +968,6 @@ async function boot() {
         sync('err', '⚠ Offline — using cached data');
         done(); hideSplash(); enterApp(); return;
       }
-      // No cache either — drop to login
     }
 
     done(); hideSplash(); showLoginScreen();
@@ -942,7 +1016,6 @@ window._chipLogin = async function(username) {
     saveSession();
     enterApp();
   } else {
-    // Offline fallback
     const cache = getCache(username);
     if (cache) {
       curUser = { username, name: username };
@@ -993,7 +1066,6 @@ window.doLogin = async function() {
   const remote = await fsGet(username);
 
   if (remote) {
-    // Existing user — always load from Firebase (new device gets full data)
     curUser = { username, name: remote.name };
     const cache = getCache(username);
     const { data, pushNeeded } = resolveData(remote.data || blank(), cache);
@@ -1089,7 +1161,6 @@ window.toggleStepsSwitch = function() {
   const wrap = document.getElementById('stepsCountWrap');
   const ttl  = document.getElementById('stepsToggleTitle');
   sw.classList.toggle('on', isStepsMode);
-  // reuse temp active style but with accent colour override
   row.style.borderColor = isStepsMode ? 'rgba(200,169,110,0.45)' : 'var(--border)';
   row.style.background  = isStepsMode ? 'rgba(200,169,110,0.06)'  : '';
   ttl.style.color       = isStepsMode ? 'var(--accent)' : '';
@@ -1113,16 +1184,12 @@ window.toggleSchedSwitch = function() {
   panel.classList.toggle('open', isSchedMode);
 
   if (isSchedMode) {
-    // Populate DOM picker on first open
     if (!document.getElementById('domPicker').children.length) buildDomPicker();
-    // Default start = today
     const td = new Date();
     document.getElementById('schedStart').value = fmtDateInput(td);
-    // Default end = 1 month out
     const te = new Date(td); te.setMonth(te.getMonth()+1);
     document.getElementById('schedEnd').value = fmtDateInput(te);
   }
-  // If sched enabled, disable temp (mutually exclusive)
   if (isSchedMode && isTempMode) {
     isTempMode = false;
     document.getElementById('pillSwitch').classList.remove('on');
@@ -1154,7 +1221,6 @@ function fmtDateInput(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// Returns true if a scheduled habit should be active today
 function isSchedActive(h) {
   const now    = new Date();
   const today  = fmtDateInput(now);
@@ -1170,7 +1236,6 @@ function isSchedActive(h) {
   return true;
 }
 
-// Human-readable "next active" hint for inactive scheduled habits
 function nextActiveHint(h) {
   const now = new Date();
   if (h.schedEnd && fmtDateInput(now) > h.schedEnd) return 'Event has ended';
@@ -1179,7 +1244,6 @@ function nextActiveHint(h) {
     const days = h.schedDays || [];
     if (!days.length) return 'No days selected';
     const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    // Find next occurrence within 7 days
     for (let i = 1; i <= 7; i++) {
       const d = new Date(now); d.setDate(d.getDate() + i);
       if (days.includes(d.getDay())) {
@@ -1192,10 +1256,8 @@ function nextActiveHint(h) {
     const dates = h.schedDates || [];
     if (!dates.length) return 'No dates selected';
     const curDay = now.getDate();
-    // Find next date this month
     const later = dates.filter(d => d > curDay).sort((a,b)=>a-b);
     if (later.length) return `Next: ${later[0]}${ordinal(later[0])} this month`;
-    // Otherwise first date next month
     const first = [...dates].sort((a,b)=>a-b)[0];
     return `Next: ${first}${ordinal(first)} next month`;
   }
@@ -1207,7 +1269,6 @@ function ordinal(n) {
   return s[(v-20)%10] || s[v] || s[0];
 }
 
-// Friendly schedule summary for the card chips
 function schedSummary(h) {
   const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const mons  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1263,7 +1324,6 @@ function renderHabits() {
 function habitHTML(h, done) {
   const d = done.includes(h.id);
 
-  // ── SCHEDULED HABIT ──
   if (h.sched) {
     const active = isSchedActive(h);
     const sum    = schedSummary(h);
@@ -1272,7 +1332,6 @@ function habitHTML(h, done) {
       : `<span class="sched-badge inactive-badge">⏸ not today</span>`;
     const hint   = !active ? `<div class="sched-next"><span class="sched-next-dot"></span>${nextActiveHint(h)}</div>` : '';
 
-    // Steps on scheduled task
     let stepsBlock = '';
     if (h.steps && h.steps > 0 && active) {
       const cur = h.stepProgress || 0, total = h.steps;
@@ -1319,7 +1378,6 @@ function habitHTML(h, done) {
     ? `🔥 ${h.streak} day streak`
     : (h.temp ? 'One-time task' : 'Start your streak today');
 
-  // ── Steps habit (non-scheduled) ──
   if (h.steps && h.steps > 0) {
     const cur = h.stepProgress || 0, total = h.steps;
     const pct = Math.round(cur/total*100), done_s = cur >= total;
@@ -1350,7 +1408,6 @@ function habitHTML(h, done) {
     </div>`;
   }
 
-  // ── Regular habit ──
   return `<div class="habit ${d?'done':''} ${h.temp?'temp-habit':''}" id="h${h.id}" onclick="window._tog(${h.id})">
     <div class="hchk"></div>
     <div class="hinfo">
@@ -1364,7 +1421,7 @@ function habitHTML(h, done) {
 
 
 // ══════════════════════════════════════════════════════
-//  TOGGLE COMPLETION  (5 gems per habit)
+//  TOGGLE COMPLETION
 // ══════════════════════════════════════════════════════
 window._tog = function(id) {
   const today = todayKey();
@@ -1375,7 +1432,7 @@ window._tog = function(id) {
   if (idx === -1) {
     arr.push(id);
     const h = appData.habits.find(x=>x.id===id);
-    if (h && !h.temp) h.streak = (h.streak||0)+1;  // streaks only for permanent habits
+    if (h && !h.temp) h.streak = (h.streak||0)+1;
     appData.gems        += GEMS_PER_HABIT;
     appData.totalEarned += GEMS_PER_HABIT;
 
@@ -1409,15 +1466,13 @@ window._stepUp = function(e, id) {
   if (!h || !h.steps) return;
 
   const cur = h.stepProgress || 0;
-  if (cur >= h.steps) return;  // already complete
+  if (cur >= h.steps) return;
 
   h.stepProgress = cur + 1;
 
-  // Animate the fill bar
   const fill = document.querySelector(`#h${id} .steps-fill`);
   if (fill) { fill.classList.remove('pop'); void fill.offsetWidth; fill.classList.add('pop'); }
 
-  // Auto-complete when final step reached
   if (h.stepProgress >= h.steps) {
     if (!appData.completions[today]) appData.completions[today] = [];
     if (!appData.completions[today].includes(id)) {
@@ -1455,7 +1510,6 @@ window._stepDown = function(e, id) {
   const wasComplete = cur >= h.steps;
   h.stepProgress = cur - 1;
 
-  // If it was complete and we're stepping back, un-complete
   if (wasComplete) {
     if (appData.completions[today]) {
       const idx = appData.completions[today].indexOf(id);
@@ -1497,7 +1551,6 @@ window.toggleForm = function() {
     document.getElementById('stepsToggleTitle').style.color     = '';
     document.getElementById('stepsCountWrap').style.display     = 'none';
     document.getElementById('stepsInput').value = '';
-    // reset sched
     document.getElementById('pillSwitchSched').classList.remove('on');
     document.getElementById('schedToggleRow').style.borderColor = 'var(--border)';
     document.getElementById('schedToggleRow').style.background  = '';
@@ -1514,7 +1567,6 @@ window.addHabit = function() {
   const nm  = inp.value.trim();
   if (!nm) return;
 
-  // Validate steps
   let stepsCount = 0;
   if (isStepsMode) {
     stepsCount = parseInt(document.getElementById('stepsInput').value, 10);
@@ -1526,7 +1578,6 @@ window.addHabit = function() {
     if (stepsCount > 100) { toast('Max 100 steps'); return; }
   }
 
-  // Validate scheduled
   let schedFields = {};
   if (isSchedMode) {
     const freq  = document.getElementById('schedFreq').value;
@@ -1564,7 +1615,6 @@ window.addHabit = function() {
   isStepsMode = false;
   isSchedMode = false;
 
-  // Reset all form controls
   document.getElementById('pillSwitch').classList.remove('on');
   document.getElementById('tempToggleRow').classList.remove('active');
   document.getElementById('pillSwitchSteps').classList.remove('on');
@@ -1601,7 +1651,6 @@ window.addHabit = function() {
 // ══════════════════════════════════════════════════════
 function renderProgress() {
   const t   = todayKey();
-  // Only count habits that are either non-scheduled, or scheduled and active today
   const active = appData.habits.filter(h => !h.sched || isSchedActive(h));
   const c   = (appData.completions[t]||[]).filter(id => active.some(h => h.id === id)).length;
   const tot = active.length;
@@ -1627,7 +1676,6 @@ function renderGraph() {
     const tot = appData.habits.length||1;
     labels.push(`${d.getDate()}/${d.getMonth()+1}`);
     pcts.push(Math.round(c.length/tot*100));
-    // Gems = 5 per completion + bonus
     gems.push(c.length * GEMS_PER_HABIT + (c.length===appData.habits.length&&appData.habits.length>0 ? BONUS_ALL_DONE : 0));
   }
 
